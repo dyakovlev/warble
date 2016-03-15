@@ -1,8 +1,7 @@
-"use strict";
+// stores the model of the entire project
+// manages saving/loading/synchronizing a project
 
-// manage saving/loading/synchronizing a project, as well as action history, redo/undo
-
-/* a project is an object that looks like this:
+/* a project file looks like this:
  * {
  *	 id: <project GUID>,
  *   clips: {
@@ -17,85 +16,133 @@
  *     loadClip: <url fragment for where to grab clip buffers from>
  *     saveProject: <url fragment for where to send a serialized project file to>
  *     saveClip: <url fragment for where to send a clip buffer to>
+ *     deleteClip: <url fragment for removing clips>
  *   },
  *   userConfig: {
  *     <user-settable config>
  *   },
  * }
- *
- *
  */
 
-class ProjectManager {
-	constructor(hub){
-		this.emit = hub.ns('pm');
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import ClipStore from "ClipStore";
 
-		this.project = {};
+
+export class Project {
+	constructor(hub){
+		this.dirty = false;
+		this.project = null;
+		this.emit = hub.emit;
+
+		// see if we need to save once every ~5s
+		this.saveTimer = window.setInterval(()=>{this.save()}, 5000);
+
+		// stores clip buffer arrays. kept separate to simplify project serialization.
+		this.buffers = new Map();
+
+		// stores clip metadata in time-indexed order; used for time-based retrieval
+		this.clipStore = new ClipStore();
 
 		hub.on('clipAdded', addClip);
 		hub.on('clipUpdated', updateClip);
 		hub.on('clipRemoved', removeClip);
-
 		hub.on('configUpdated', updateConfig);
 		hub.on('channelsModified', updateChannels);
+		hub.on('saveforced', ()=>{ this.save(true); });
 	}
 
 	load(){
-		this.emit('loading');
+		this.emit('loadingproject');
 
+		// a new, uninitialized pageload will have an empty, new project
+		// serialized into it. if it is not, the user tried to access a project
+		// they do not have access to, or something else went wrong.
 		if (window._warbleProject === undefined) {
-			WARNING("no project file found, starting new project");
-			// some sort of new-project stuff here
-
-		} else {
-			this.project = window.JSON.parse(window._warbleProject);
-
-			for (var clip of this.project.clips) {
-				INFO(`loading clip ${clip.id}`);
-
-				$.get(this.project.urls.loadClip.format(clip.id))
-					.done(data => {
-						clip.buffer = data;
-						this.emit('gotclip', clip);
-					});
-			}
+			ERROR("no warble project definition found");
+			this.emit("projectloadfailed");
+			return;
 		}
 
-		this.emit('doneloading');
+		this.project = window.JSON.parse(window._warbleProject);
+		this.clipStore.initialize(this.project.clips);
+
+		for (var clip of this.project.clips) {
+			INFO(`downloading clip buffer for clip ${clip.id}`);
+
+			// TODO use some deferred magic to pipeline this
+			// TODO investigate using localStorage to cache some of these maybe?
+			$.get(this.project.urls.loadClip.format(clip.id))
+				.done(data => { this.buffers.set(clip.id) = data; })
+				.fail(err => { ERROR(`failed to load buffer for clip ${clip.id}`); });
+		}
+
+		this.emit('loadedproject');
 	}
 
-	updateClips(allClips){
-		let clipsToUpload = [], clipsToDelete = [];
-
-		// update self.project with stripped down clips for any modified ones
-		for (let clip of allClips){
-			if (! this.project.clips.hasOwnProperty(clip.id)){
-				clipsToUpload.push(clip);
-				this.project.clips[clip.id] = pick(clip, 
-			} else if (clip.modified) 
-
-			}
+	addClip({clip, buffer}){
+		if (this.project.clips.hasOwnProperty(clip.id)){
+			ERROR("tried to add a clip that is already stored", clip);
+			return;
 		}
 
-		// find any clips that are no longer 
+		this.project.clips[clip.id] = clip;
+		this.buffers[clip.id] = buffer;
+		this.clipStore.add(clip);
+		this.dirty = true;
 
-		$.post(this.project.urls.saveProject, this.project);
+		$.post(this.project.urls.saveClip, {id: clip.id, buffer: buffer})
+			.fail((err)=>{ ERROR(`upload of clip ${clip.id} failed`, err) });
 
-		for (let clip of clipsToUpload)
-			// TODO pipeline this using Deferred (then)
-			$.post(this.project.urls.saveClip, {id: clip.id, buffer: clip.buffer})
-				.done()
-				.fail();
+		this.emit("addedclip");
+	}
 
-		for (let clip of clipsToDelete)
-			$.post(this.project.urls.softDeleteClip, clip.id)
-				.done()
-				.fail();
+	updateClip({clip, buffer}){
+		if (!this.project.clips.hasOwnProperty(clip.id)){
+			ERROR("attempted to update clip we don't know about", clip)
+			return;
+		}
+
+		this.project.clips[clip.id] = clip;
+		this.buffers[clip.id] = buffer;
+		this.clipStore.update(clip);
+		this.dirty = true;
+
+		this.emit("updatedclip");
+	}
+
+	removeClip(clipId){
+		if (!this.project.clips.hasOwnProperty(clip.id)){
+			ERROR("tried to remove a clip we don't know about", clipId);
+			return;
+		}
+
+		delete this.project.clips[clipId];
+		delete this.buffers[clipId];
+		this.clipStore.remove(clipId);
+		this.dirty = true;
+
+		$.post(this.project.urls.deleteClip, clipId)
+			.fail((err)=>{ ERROR(`delete of clip ${clip.id} failed`, err) });
 	}
 
 	updateChannels(channels){
+		this.project.channels = channels;
+		this.dirty = true;
 	}
 
-	updateConfig(Config){
+	updateConfig(config){
+		this.project.config = config;
+		this.dirty = true;
+	}
+
+	save(force=false){
+		// don't save the project if we haven't actually modified anything..
+		if (force || this.dirty){
+			$.post(this.project.urls.saveProject, JSON.serialize(this.project))
+				.done(this.emit('savedproject'))
+				.fail((err)=>{ ERROR("incremental project save failed", err) });
+		}
 	}
 }
+
+

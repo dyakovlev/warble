@@ -1,22 +1,21 @@
-"use strict";
+import {EventHub} from "components/EventHub";
+import {Project} from "components/Project";
+import {Workspace} from "components/Workspace";
 
-let config = {
-	sampleRate: 44100,
-};
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "utils/misc";
+
 
 let w = class Warble {
 
 	constructor(config){
-		this.config = config;
-
 		let hub = new EventHub();
 
-		this.project = new ProjectManager(hub);
-		this.workspace = new Workspace(hub);
+		this.project = new Project(hub);		// the model
+		this.workspace = new Workspace(hub);    // the view
 
-		this.editor = new ClipEditor(hub);
-		this.player = new Player(hub);
-		this.recorder = new Recorder(hub);
+		this.editor = new ClipEditor(hub); // a modal editor
+		this.player = new Player(hub);     // an audio utility
+		this.recorder = new Recorder(hub); // an audio utility
 
 		this.project.load();
 	}
@@ -95,4 +94,4 @@ let w = class Warble {
 		return eventHandlers;
 	}
 
-}(config);
+}();

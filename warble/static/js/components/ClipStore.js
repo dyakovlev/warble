@@ -1,55 +1,69 @@
-"use strict";
-
 // ClipStore holds all the clips in sorted order to enable efficient search and ordered playback
 
-// TODO: add generators to ClipStore for in-order traversal of clips
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
 
-var ClipStore = function(){
-	this._max_id = 0;
+export class ClipStore {
+	constructor(){
+		this._clipsByStartTime = new Array();
+		this._clipsByEndTime = new Array();
+	}
 
-	// id -> Clip
-	this._clip_map = {};
+	add(clip){
+		INFO(`adding clip ${clip.id} to clip store`);
 
-	// sorted by start time asc
-	this._clip_list = [];
+		let startInsertPos = bisect(this._clipsByStartTime, clip.startTime),
+			endInsertPos   = bisect(this._clipsByEndTime, clip.endTime);
 
-	// all the channels we're aware of (strict ordering)
-	this._channels = [];
+		this._clipsByStartTime.splice(startInsertPos, 0, [clip.startTime, clip.id]);
+		DEBUG(`clip ${clip.id} added to position ${startInsertPos} in start-time list`);
 
-	INFO("initialized ClipStore component");
-};
+		this._clipsByEndTime.splice(endInsertPos, 0, [clip.endTime, clip.id]);
+		DEBUG(`clip ${clip.id} added to position ${endInsertPos} in end-time list`);
+	}
 
-// stores a clip
-ClipStore.prototype.add = function(clip){
-	var id = this._id();
-	DEBUG("adding clip {0} to datastore".format(id));
+	delete(id){
+		INFO(`deleting clip ${id} from clip store`);
 
-	this._clip_map[id] = clip;
+		let startClipDataIndex = this._clipsByStartTime.findIndex((item) => { item[1].id == id; });
+		if (startClipDataIndex == -1){ WARN(`clip ${id} not found in start-time list`); }
+		delete this._clipsByStartTime[startClipDataIndex];
 
-	// insert handle into sorted list
-};
+		let endClipDataIndex = this._clipsByEndTime.findIndex((item) => { item[1].id == id; });
+		if (endClipDataIndex == -1){ WARN(`clip ${id} not found in end-time list`); }
+		delete this._clipsByEndTime[endClipDataIndex];
+	}
 
+	update(clip){
+		INFO(`updating clip ${clip.id} in clip store`);
 
-// returns a clip
-ClipStore.prototype.get = function(id){
-	DEBUG("retrieving clip {0}".format(id));
-	return this._clip_map[id];
-};
+		this.delete(clip.id);
+		this.add(clip);
+	}
 
+	get(time){
+		// get all clip IDs that occur at specific time
+	}
 
-// returns list of clips that start in provided time range
-ClipStore.prototype.getSlice = function(start, end){
-	// page to start time
-	// step until end time
-};
+	getRange(start, end){
+		// get all clip IDs that start after start and end before end
+	}
+}
 
+// binary search-based alg for finding insertion index for x to keep array sorted
+let bisect = function(array, pivot){
+	let low = 0,
+        high = array.length,
+		mid;
 
-// removes clip
-ClipStore.prototype.delete = function(id){
-};
+	while (low < high) {
+		mid = (low + high) >> 1;
 
+		if (pivot < array[mid][0]) {
+			high = mid;
+		} else {
+		    low = mid + 1;
+		}
+	}
 
-// make a clip handle
-ClipStore.prototype._id = function(){
-	return ++this._max_id;
-};
+	return low;
+}
