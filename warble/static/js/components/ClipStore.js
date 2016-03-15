@@ -1,4 +1,8 @@
+"use strict";
+
 // ClipStore holds all the clips in sorted order to enable efficient search and ordered playback
+
+// TODO: add generators to ClipStore for in-order traversal of clips
 
 var ClipStore = function(){
 	this._max_id = 0;

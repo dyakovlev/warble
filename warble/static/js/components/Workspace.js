@@ -1,3 +1,5 @@
+"use strict";
+
 // Workspace generates the visual part of the app
 
 var Workspace = function(){
