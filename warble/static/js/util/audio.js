@@ -1,8 +1,7 @@
-/* Audio utils */
-
-function generateGUMPatch(){
+export function generateGUMPatch(){
 	return function(constraints, successCallback, errorCallback) {
-		var getUserMedia = (navigator.getUserMedia ||
+		// Maybe we have a browser-prefixed one?
+		let getUserMedia = (navigator.getUserMedia ||
 				navigator.webkitGetUserMedia ||
 				navigator.mozGetUserMedia ||
 				navigator.msGetUserMedia);
@@ -17,4 +16,10 @@ function generateGUMPatch(){
 			getUserMedia.call(navigator, constraints, successCallback, errorCallback);
 		});
 	}
+}
+
+
+export function makeAudioContext(){
+	let ac = window.AudioContext || window.webkitAudioContext;
+	return new ac();
 }

@@ -26,11 +26,11 @@ export class ClipStore {
 
 		let startClipDataIndex = this._clipsByStartTime.findIndex((item) => { item[1].id == id; });
 		if (startClipDataIndex == -1){ WARN(`clip ${id} not found in start-time list`); }
-		delete this._clipsByStartTime[startClipDataIndex];
+		this._clipsByStartTime.splice(startClipDataIndex, 1);
 
 		let endClipDataIndex = this._clipsByEndTime.findIndex((item) => { item[1].id == id; });
 		if (endClipDataIndex == -1){ WARN(`clip ${id} not found in end-time list`); }
-		delete this._clipsByEndTime[endClipDataIndex];
+		this._clipsByEndTime.splice(endClipDataIndex, 1);
 	}
 
 	update(clip){
@@ -42,27 +42,24 @@ export class ClipStore {
 
 	get(time){
 		// get all clip IDs that occur at specific time
+
+		// TODO figure out how this is used
 	}
 
 	getRange(start, end){
 		// get all clip IDs that start after start and end before end
+
+		// TODO figure out how this is used
 	}
 }
 
-// binary search-based alg for finding insertion index for x to keep array sorted
+// binary search-based alg find insertion index for pivot that keeps array sorted
 let bisect = function(array, pivot){
-	let low = 0,
-        high = array.length,
-		mid;
+	let low = 0, high = array.length, mid;
 
 	while (low < high) {
 		mid = (low + high) >> 1;
-
-		if (pivot < array[mid][0]) {
-			high = mid;
-		} else {
-		    low = mid + 1;
-		}
+		(pivot < array[mid][0]) ? high = mid : low = mid + 1;
 	}
 
 	return low;

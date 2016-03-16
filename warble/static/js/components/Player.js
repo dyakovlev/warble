@@ -1,19 +1,25 @@
+// component that deals with outputting audio through audiocontext
 
-var Player = function(){
-	window.AudioContext = window.AudioContext || window.webkitAudioContext;
-	this.ac = new AudioContext();
-	var isPlaying = false;
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import makeAudioContext from "./utils/audio";
 
-	INFO("initialized Player component");
-};
+export class Player {
+	constructor(hub){
+		this.ac = makeAudioContext();
 
-// takes array of Clips, schedules according to start offsets, sets up effects, plays all of them
-Player.prototype.play = function(list_o_clips){
-};
+		this.emit = hub.emit;
+	}
 
+	play(clips){
 
-// stops playback
-Player.prototype.stop = function(){
-};
+	}
 
+	pause(){
+
+	}
+
+	stop(){
+
+	}
+}
 

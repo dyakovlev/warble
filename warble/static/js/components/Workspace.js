@@ -1,81 +1,144 @@
-"use strict";
+// Workspace deals with generating the app's views
 
-// Workspace generates the visual part of the app
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
 
-var Workspace = function(){
-	this._elements = {
-		overlay: $('.workspace .overlay'),
-		pane: $('.workspace .pane'),
-		controls: $('.workspace .controls'),
-		play_control: $('.workspace .control.play'),
-		pause_control: $('.workspace .control.pause'),
-		stop_control: $('.workspace .control.stop'),
-		record_control: $('.workspace .control.record'),
-	};
+export class Workspace {
+	constructor(hub){
+		// TODO this can only be done after domReady
+		this.$pane = $('.workspace .pane');
+		this.$allChannels = $('.workspace .channel');
 
-	this._channels = [];
+		this.overlay = new Overlay(hub);
+		this.controls = new Controls(hub);
+		this.paneScroller = new PaneScroller(hub);
+		this.recorderView = new RecorderView(hub);
+
+		this.emit = hub.emit;
+	}
+
+	drawClip(clip){
+		var leftOffsetInPX = timeToOffset(clip.start_ts);
+		var lengthInPX = timeToLength(clip.length);
+		var clipHTML = CLIPTEMPLATE(leftOffsetInPX, lengthInPX, clip.title, clip.id);
+
+		this._elements.pane.append($(clipHTML));
+	}
+}
+
+// template for a clip segment
+const CLIPTEMPLATE = (left, width, title, id) => { `
+		<div style="margin-left:${left}px; width:${width}px" class="clip">
+			<span class="clip-title">${title}</span>
+			<span class="clip-controls">
+				<button class="clip-control play" />
+				<button class="clip-control edit" />
+			</span>
+		</div>`
 };
 
 
-// attach UI elements to internal and external event handlers
-Workspace.prototype.initUI = function(handlers){
-	this._handlers = handlers;
+/*
+ * manages showing and hiding non-interactive overlays
+ */
+class Overlay {
+	constructor(hub){
+		this.emit = hub.emit;
+		this.$overlay: $('.workspace .overlay');
 
-	// record
+		// react to project loading behaviors
+		hub.on('loadingproject', () => { this.show(OVERLAYS.WAIT) });
+		hub.on('loadedproject', () => { this.hide() });
+		hub.on('projectloadfailed', (err) => { this.show(OVERLAYS.ERROR, err) });
 
-	// play
+		// react to recording behaviors
+		hub.on('recordpressed', () => { this.show(OVERLAYS.RECORDING) });
 
-	// pause
+		// own UI
+		this.$overlay.find('.close').click(this.hide);
+	}
 
-	// stop
+	show(overlay, ...args){
+		let renderedOverlay = (typeof(overlay) == "function") ? overlay(...args) : overlay;
 
-	// delegate for clip actions
+		this.$overlay.html(renderedOverlay);
+		this.$overlay.show();
+		this.emit('overlayshown');
+	}
+
+	hide(){
+		this.$overlay.hide();
+		this.emit('overlayhidden');
+	}
 }
 
 // templates to overlay when disabling UI for various reasons
-Workspace.prototype.overlays = {
+const OVERLAYS = {
 	RECORDING: '<span class="recording-overlay">RECORDING...</span>',
 	EDITING: '<span class="editing-overlay">EDITING...</span>',
 	RENDERING: '<span class="rendering-overlay">RENDERING...</span>',
-};
-
-// template for a clip segment
-Workspace.prototype._clipTemplate = '<div style="margin-left:{0}px" class="clip"><span class="clip-title">{1}</span><span class="clip-controls"><button class="clip-control play" /><button class="clip-control edit" /></span></div>';
-
-
-// disable interaction with UI elements
-// overlay - HTML template to place in overlay block while UI is locked
-Workspace.prototype.lock = function(overlay){
-	if (overlay !== undefined) this._elements.overlay.html(overlay);
-	this._elements.overlay.show();
-	this._elements.controls.disabled = true;
+	ERROR: (err) => { `<span class="error-overlay">${err}</span>` },
 };
 
 
-// enable interaction with UI elements
-Workspace.prototype.unlock = function(){
-	this._elements.overlay.hide();
-	this._elements.controls.disabled = false;
-};
+/*
+ * manages interacting with the overall play/pause/stop/record controls
+ */
+class Controls {
+	constructor(hub){
+		this.emit = hub.emit;
+
+		this.$allControls = $('.workspace .controls');
+
+		this.$play_control = $('.workspace .control.play');
+		this.$pause_control = $('.workspace .control.pause');
+		this.$stop_control = $('.workspace .control.stop');
+		this.$record_control = $('.workspace .control.record');
+
+		this.$play_control.click(evt => { this.clickControl(evt, 'playpressed') });
+		this.$pause_control.click(evt => { this.clickControl(evt, 'pausepressed') });
+		this.$stop_control.click(evt => { this.clickControl(evt, 'stoppressed') });
+		this.$record_control.click(evt => { this.clickControl(evt, 'recordpressed') });
+
+		hub.on('overlayshown', this.disable);
+		hub.on('overlayhidden', this.enable);
+
+		hub.on('loadingproject', this.disable);
+		hub.on('loadedproject', this.enable);
+	}
+
+	disable(){
+		this.$allControls.disabled = true;
+		this.emit('controlsdisabled');
+	}
+
+	enable(){
+		this.$allControls.disabled = false;
+		this.emit('controlsenabled');
+	}
+
+	clickControl(button, evt){
+		button.addClass('active');
+		this.$allControls.not(button).removeClass('active');
+		this.emit(evt);
+	}
+}
 
 
-// generate a clip display box and place it in clip's appropriate location
-// in the workspace.
-Workspace.prototype.drawClip = function(clip){
+// deals with scrolling the view pane when playback is going
+class PaneScroller {
+	constructor(hub){
+		this.emit = hub.emit;
 
-	var leftOffsetInPX = timeToOffset(clip.start_ts);
-	var lengthInPX = timeToLength(clip.length);
-	var clipHTML = this._clipTemplate.format(
-		leftOffsetInPX,
-		lengthInPX,
-		clip.channel,
-		clip.title,
-		clip.id
-	);
+		hub.on('playpressed', this.animatePlayback);
+		hub.on('pausepressed', this.pausePlayback);
+		hub.on('stoppressed', this.resetPlayback);
+	}
+}
 
-	this._elements.pane.append($(clipHTML));
-};
 
-// place cursor at mouse location
-Workspace.prototype.placeCursor = function(){
-};
+// deals with the recording modal
+class RecorderView {
+	constructor(hub){
+		this.emit = hub.emit;
+	}
+}

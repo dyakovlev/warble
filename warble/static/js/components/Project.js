@@ -6,11 +6,17 @@
  *	 id: <project GUID>,
  *   clips: {
  *     <id>: {
- *       <clip meta>
+ *       id: <unique clip id>,
+ *       startTime: <ms from 0 until start position>,
+ *       endTime: <startTime + clip duration>,
+ *       name: <clip's shortname>,
+ *       meta: <text blob for notes about clip>
+ *
  *     }, ... },
  *   channels: [
  *     {
- *       <channel meta>
+ *       name: <channel name>,
+ *       meta: <text blob for notes about channel>
  *     }, ...],
  *   urls: {
  *     loadClip: <url fragment for where to grab clip buffers from>
@@ -43,11 +49,11 @@ export class Project {
 		// stores clip metadata in time-indexed order; used for time-based retrieval
 		this.clipStore = new ClipStore();
 
-		hub.on('clipAdded', addClip);
-		hub.on('clipUpdated', updateClip);
-		hub.on('clipRemoved', removeClip);
-		hub.on('configUpdated', updateConfig);
-		hub.on('channelsModified', updateChannels);
+		hub.on('clipAdded', this.addClip);
+		hub.on('clipUpdated', this.updateClip);
+		hub.on('clipRemoved', this.removeClip);
+		hub.on('configUpdated', this.updateConfig);
+		hub.on('channelsModified', this.updateChannels);
 		hub.on('saveforced', ()=>{ this.save(true); });
 	}
 
@@ -58,19 +64,21 @@ export class Project {
 		// serialized into it. if it is not, the user tried to access a project
 		// they do not have access to, or something else went wrong.
 		if (window._warbleProject === undefined) {
-			ERROR("no warble project definition found");
-			this.emit("projectloadfailed");
+			ERROR("no project definition found");
+			this.emit("projectloadfailed", "no project definition found");
 			return;
 		}
 
 		this.project = window.JSON.parse(window._warbleProject);
-		this.clipStore.initialize(this.project.clips);
+
+		// CAVEAT if this misbehaves it'll basically be O(insertion sort) which sucks
+		this.project.clips.forEach(clip => { this.clipStore.add(clip); });
 
 		for (var clip of this.project.clips) {
 			INFO(`downloading clip buffer for clip ${clip.id}`);
 
 			// TODO use some deferred magic to pipeline this
-			// TODO investigate using localStorage to cache some of these maybe?
+			// TODO investigate using localStorage to cache these instead of storing remotely
 			$.get(this.project.urls.loadClip.format(clip.id))
 				.done(data => { this.buffers.set(clip.id) = data; })
 				.fail(err => { ERROR(`failed to load buffer for clip ${clip.id}`); });
@@ -93,7 +101,7 @@ export class Project {
 		$.post(this.project.urls.saveClip, {id: clip.id, buffer: buffer})
 			.fail((err)=>{ ERROR(`upload of clip ${clip.id} failed`, err) });
 
-		this.emit("addedclip");
+		this.emit("addedclip", clip);
 	}
 
 	updateClip({clip, buffer}){
@@ -107,7 +115,7 @@ export class Project {
 		this.clipStore.update(clip);
 		this.dirty = true;
 
-		this.emit("updatedclip");
+		this.emit("updatedclip", clip);
 	}
 
 	removeClip(clipId){
@@ -118,11 +126,13 @@ export class Project {
 
 		delete this.project.clips[clipId];
 		delete this.buffers[clipId];
-		this.clipStore.remove(clipId);
+		this.clipStore.delete(clipId);
 		this.dirty = true;
 
 		$.post(this.project.urls.deleteClip, clipId)
 			.fail((err)=>{ ERROR(`delete of clip ${clip.id} failed`, err) });
+
+		this.emit("removedclip", clipId);
 	}
 
 	updateChannels(channels){

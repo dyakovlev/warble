@@ -1,26 +1,34 @@
-var ClipEditor = function(config){
-};
+// interface and utility funcs for editing a clip
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
 
-// set up controls and event listeners
-ClipEditor.prototype.initUI = function(handlers){
-};
+export class ClipEditor {
 
-// bring up the editor, load in the clip being modified
-ClipEditor.prototype.show = function(clip){
-};
+	// set up controls and event listeners
+	initUI(){
 
-// hide the editor
-ClipEditor.prototype.hide = function(){
-};
+	}
 
-// play clip with the current modifications
-ClipEditor.prototype.play = function(){
-};
+	// bring up the editor, load in the clip being modified
+	show(clip){
 
-// re-record some of the buffer while playing it back
-ClipEditor.prototype.punch = function(){
-};
+	}
 
-// edit non-sound clip properties like name, channel, comments
-ClipEditor.prototype.adjustMetadata = function(){
-};
+	// hide the editor
+	hide(){
+	}
+
+	// play clip with the current modifications
+	play(){
+
+	}
+
+	// re-record some of the buffer while playing it back
+	punch(){
+
+	}
+
+	// edit non-sound clip properties like name, channel, comments
+	adjustMetadata(){
+
+	}
+}

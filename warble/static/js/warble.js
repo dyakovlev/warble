@@ -13,10 +13,6 @@ let w = class Warble {
 		this.project = new Project(hub);		// the model
 		this.workspace = new Workspace(hub);    // the view
 
-		this.editor = new ClipEditor(hub); // a modal editor
-		this.player = new Player(hub);     // an audio utility
-		this.recorder = new Recorder(hub); // an audio utility
-
 		this.project.load();
 	}
 

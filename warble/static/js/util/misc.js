@@ -1,12 +1,9 @@
-/* Misc Utils */
-
 // logging
-const _log_level = 1; // TODO move to config
+const _log_level = 1; // TODO move to config, maybe find a way to set it per module
 const _log_error = function(lvl){
-	return function(msg){
+	return (...args) => {
 		if (_log_level >= lvl)
-			for (let i = 0; i < arguments.length; i++)
-				console.log(arguments[i]);
+			args.forEach((arg) => { console.log(arg) });
 	}
 };
 
@@ -18,16 +15,12 @@ export const TRACE = _log_error(5)
 
 
 // math
-var clamp = (a, b, c) => Math.min(Math.max(a, b, c))
+var clamp = (a, b, c) => Math.min(Math.max(a, b), c)
 
-
-// errors
-export function OperationError(msg){
-	this.type = "OperationError";
-	this.message = msg;
-}
 
 // string formatting
+// TODO this needs to be imported in places that use it for the side effect to take effect
+// TODO reconsider if we actually need this
 if (!String.prototype.format) {
     String.prototype.format = function() {
 		var args = arguments;
