@@ -1,6 +1,6 @@
 // Clips encapsulate an audio recording and related metadata
 
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
 
 export class Clip {
 	constructor(
@@ -10,7 +10,7 @@ export class Clip {
 		buffer_type = BUFFER_TYPES['wav']
 	){
 		// clip's unique ID
-		// TODO this needs to get converted into something unique on the backend.. at some point. somehow
+		// TODO this needs to get converted into something unique on the backend
 		this.id = Symbol();
 
 		// type of the buffer (uncompressed WAV, reference to another clip by symbol, draft)
@@ -24,10 +24,6 @@ export class Clip {
 
 		// channel
 		this.channel = channel;
-	}
-
-	length(){
-		return this.buffer[0].length / config.sampleRate
 	}
 }
 

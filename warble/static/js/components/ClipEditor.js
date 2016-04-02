@@ -1,10 +1,8 @@
 // interface and utility funcs for editing a clip
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/error";
 
 export class ClipEditor {
-
-	// set up controls and event listeners
-	initUI(){
+	constructor(hub){
 
 	}
 

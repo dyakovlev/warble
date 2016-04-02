@@ -1,6 +1,6 @@
 // component that deals with outputting audio through audiocontext
 
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
 import makeAudioContext from "./utils/audio";
 
 export class Player {

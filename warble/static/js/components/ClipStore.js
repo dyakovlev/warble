@@ -1,6 +1,6 @@
 // ClipStore holds all the clips in sorted order to enable efficient search and ordered playback
 
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/error";
 
 export class ClipStore {
 	constructor(){
@@ -53,7 +53,7 @@ export class ClipStore {
 	}
 }
 
-// binary search-based alg find insertion index for pivot that keeps array sorted
+// binary search to find insertion index for pivot that keeps array sorted
 let bisect = function(array, pivot){
 	let low = 0, high = array.length, mid;
 

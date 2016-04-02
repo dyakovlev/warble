@@ -1,59 +1,33 @@
 // Workspace deals with generating the app's views
 
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
+import { draggable } from "./utils/misc";
+import { Recorder } from "./utils/audio";
 
 export class Workspace {
 	constructor(hub){
-		// TODO this can only be done after domReady
 		this.$pane = $('.workspace .pane');
-		this.$allChannels = $('.workspace .channel');
 
 		this.overlay = new Overlay(hub);
 		this.controls = new Controls(hub);
 		this.paneScroller = new PaneScroller(hub);
-		this.recorderView = new RecorderView(hub);
-
-		this.emit = hub.emit;
-	}
-
-	drawClip(clip){
-		var leftOffsetInPX = timeToOffset(clip.start_ts);
-		var lengthInPX = timeToLength(clip.length);
-		var clipHTML = CLIPTEMPLATE(leftOffsetInPX, lengthInPX, clip.title, clip.id);
-
-		this._elements.pane.append($(clipHTML));
+		this.recorder = new RecordingModal(hub);
+		this.slider = new PlaybackPosition(hub);
 	}
 }
 
-// template for a clip segment
-const CLIPTEMPLATE = (left, width, title, id) => { `
-		<div style="margin-left:${left}px; width:${width}px" class="clip">
-			<span class="clip-title">${title}</span>
-			<span class="clip-controls">
-				<button class="clip-control play" />
-				<button class="clip-control edit" />
-			</span>
-		</div>`
-};
-
-
-/*
- * manages showing and hiding non-interactive overlays
- */
+// manages showing and hiding non-interactive overlays
 class Overlay {
 	constructor(hub){
 		this.emit = hub.emit;
-		this.$overlay: $('.workspace .overlay');
 
-		// react to project loading behaviors
-		hub.on('loadingproject', () => { this.show(OVERLAYS.WAIT) });
-		hub.on('loadedproject', () => { this.hide() });
-		hub.on('projectloadfailed', (err) => { this.show(OVERLAYS.ERROR, err) });
+		hub.on('loadingproject', () => { this.show(this.OVERLAYS.WAIT) });
+		hub.on('loadedproject', this.hide);
+		hub.on('projectloadfailed', (err) => { this.show(this.OVERLAYS.ERROR, err) });
 
-		// react to recording behaviors
-		hub.on('recordpressed', () => { this.show(OVERLAYS.RECORDING) });
+		hub.on('recordpressed', () => { this.show(this.OVERLAYS.GREYEDOUT) });
 
-		// own UI
+		this.$overlay = $('.workspace .overlay');
 		this.$overlay.find('.close').click(this.hide);
 	}
 
@@ -71,74 +45,150 @@ class Overlay {
 	}
 }
 
-// templates to overlay when disabling UI for various reasons
-const OVERLAYS = {
-	RECORDING: '<span class="recording-overlay">RECORDING...</span>',
+Overlay.prototype.OVERLAYS = {
+	GREYEDOUT: '<span class="greyed-out-overlay"></span>',
 	EDITING: '<span class="editing-overlay">EDITING...</span>',
 	RENDERING: '<span class="rendering-overlay">RENDERING...</span>',
 	ERROR: (err) => { `<span class="error-overlay">${err}</span>` },
 };
 
 
-/*
- * manages interacting with the overall play/pause/stop/record controls
- */
+// manages interacting with the overall play/pause/stop/record controls
 class Controls {
 	constructor(hub){
 		this.emit = hub.emit;
 
 		this.$allControls = $('.workspace .controls');
 
-		this.$play_control = $('.workspace .control.play');
-		this.$pause_control = $('.workspace .control.pause');
-		this.$stop_control = $('.workspace .control.stop');
-		this.$record_control = $('.workspace .control.record');
-
-		this.$play_control.click(evt => { this.clickControl(evt, 'playpressed') });
-		this.$pause_control.click(evt => { this.clickControl(evt, 'pausepressed') });
-		this.$stop_control.click(evt => { this.clickControl(evt, 'stoppressed') });
-		this.$record_control.click(evt => { this.clickControl(evt, 'recordpressed') });
+		this.$allControls.find('.control.play').click(this.makeClickControl('playpressed'));
+		this.$allControls.find('.control.pause').click(this.makeClickControl('pausepressed'));
+		this.$allControls.find('.control.stop').click(this.makeClickControl('stoppressed'));
+		this.$allControls.find('.control.record').click(this.makeClickControl('recordpressed'));
 
 		hub.on('overlayshown', this.disable);
 		hub.on('overlayhidden', this.enable);
-
-		hub.on('loadingproject', this.disable);
-		hub.on('loadedproject', this.enable);
 	}
 
 	disable(){
 		this.$allControls.disabled = true;
-		this.emit('controlsdisabled');
 	}
 
 	enable(){
 		this.$allControls.disabled = false;
-		this.emit('controlsenabled');
 	}
 
-	clickControl(button, evt){
-		button.addClass('active');
-		this.$allControls.not(button).removeClass('active');
-		this.emit(evt);
+	makeClickControl(eventToEmit){
+		return (evt) => {
+			button.addClass('active');
+			this.$allControls.not(button).removeClass('active');
+			this.emit(eventToEmit);
+		};
 	}
 }
 
 
-// deals with scrolling the view pane when playback is going
-class PaneScroller {
+// deals with the physical and temporal position of the current-position slider
+class PlaybackPosition{
 	constructor(hub){
 		this.emit = hub.emit;
 
-		hub.on('playpressed', this.animatePlayback);
-		hub.on('pausepressed', this.pausePlayback);
-		hub.on('stoppressed', this.resetPlayback);
+		this.$slider = $('.workspace .slider');
+
+		hub.on('playpressed', this.animate);
+		hub.on('pausepressed', this.pause);
+		hub.on('stoppressed', this.reset);
+
+		draggable(this.$slider, {
+			x: true,
+			cursor: 'pointer',
+			ondrag: () => { this.emit('slidermoved', this.getTime()) },
+		});
+	}
+
+	getTime(){
+	}
+
+	getPos(){
+	}
+
+	animate(){
+	}
+
+	pause(){
+	}
+
+	reset(){
+	}
+
+	moveToTime(time){
+	}
+
+	moveToPos(px){
 	}
 }
 
 
-// deals with the recording modal
-class RecorderView {
+// shows and sets up interactions with the recording modals
+class RecordingModal {
 	constructor(hub){
-		this.emit = hub.emit;
+		this.$modal = $('.recording-modal');
+		this.$countdown = $('.recording-modal .countdown');
+		this.count = 3;
+		this.recorder = new Recorder();
+
+		this.prefs = {
+			'backingTrack': false, // play recorded tracks while recording clip
+		};
+
+		this.$modal.on('changed', 'input.backing-track', this.setPref('backingTrack'));
+
+		this.$modal.on('click', 'button.close', () => {
+			this.$modal.hide();
+			this.recorder.stop();
+		});
+
+		hub.on('recordpressed', this.show);
+	}
+
+	setPref(pref){
+		return (evt) => {
+			this.prefs[pref] = evt.checked;
+		};
+	}
+
+	show(){
+		this.$modal.show();
+		this.interval = window.setInterval(() => { this.countdown(this.count--) }, 1000);
+	}
+
+	countdown(timeToGo){
+		if (timeToGo == 0){
+			window.clearInterval(this.interval);
+			this.count = 3;
+			this.recorder.start();
+		} else {
+			this.$countdown.html(timeToGo);
+		}
+	}
+
+	hide(){
+		this.$modal.hide();
+		this.recorder.stop((buffer) => {
+			this.emit('bufferrecorded', buffer);
+		});
 	}
 }
+
+
+// template for a clip segment
+const CLIPTEMPLATE = (left, width, title, id) => { `
+		<div style="margin-left:${left}px; width:${width}px" class="clip">
+			<span class="clip-title">${title}</span>
+			<span class="clip-controls">
+				<button class="clip-control play" />
+				<button class="clip-control edit" />
+			</span>
+		</div>`
+};
+
+

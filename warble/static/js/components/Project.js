@@ -8,8 +8,8 @@
  *     <id>: {
  *       id: <unique clip id>,
  *       startTime: <ms from 0 until start position>,
- *       endTime: <startTime + clip duration>,
- *       name: <clip's shortname>,
+ *       duration: <clip duration in ms>,
+ *       name: <clip name>,
  *       meta: <text blob for notes about clip>
  *
  *     }, ... },
@@ -30,8 +30,8 @@
  * }
  */
 
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/misc";
-import ClipStore from "ClipStore";
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/error";
+import ClipStore from "./components/ClipStore";
 
 
 export class Project {
@@ -49,12 +49,11 @@ export class Project {
 		// stores clip metadata in time-indexed order; used for time-based retrieval
 		this.clipStore = new ClipStore();
 
-		hub.on('clipAdded', this.addClip);
 		hub.on('clipUpdated', this.updateClip);
 		hub.on('clipRemoved', this.removeClip);
 		hub.on('configUpdated', this.updateConfig);
 		hub.on('channelsModified', this.updateChannels);
-		hub.on('saveforced', ()=>{ this.save(true); });
+		hub.on('saveforced', () => { this.save(true); });
 	}
 
 	load(){
@@ -146,7 +145,6 @@ export class Project {
 	}
 
 	save(force=false){
-		// don't save the project if we haven't actually modified anything..
 		if (force || this.dirty){
 			$.post(this.project.urls.saveProject, JSON.serialize(this.project))
 				.done(this.emit('savedproject'))

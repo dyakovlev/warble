@@ -52,5 +52,43 @@ that until the thing at least builds or something
 
 started adding views to Workspace module
 
-## 3/16/16
+## 4/1/16
+
+added draggable() to misc lib.. needs to actually be invented.
+
+expanded a few more workspace widgets. file getting a bit ungainly.. might be worthwhile to make
+components/workspace module folder
+
+components/
+- Main
+- Project
+- EventHub
+- ClipStore
+- workspace/
+  - Main
+  - Overlay
+  - Controls
+  - PlaybackPosition
+  - RecordingModal
+utils/
+- misc
+- audio
+- time
+
+moved Recorder into utils/audio
+
+moved error stuff into utils/error
+
+open question: how do i make PlaybackPosition and RecordingModal talk to each other neatly?
+
+open question: can there be more than one active audio context
+
+https://github.com/eatonphil/smalljs is a near almost-drop-in for jquery
+
+https://github.com/bcherny/draggable good reference for draggable
+
+https://github.com/bcherny/uxhr good reference for xhr
+
+TODO icky, addClip and clipadded events. generally events in Project are fucky
+
 

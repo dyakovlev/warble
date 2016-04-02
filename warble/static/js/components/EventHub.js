@@ -1,21 +1,21 @@
-import {ERROR, WARN, INFO, DEBUG, TRACE} from "utils/misc";
-
 /*
  * an ES6 event hub
  *
  * usage:
  *	let h = new EventHub()
  *
- *	let cbHandle = h.on('myevent', (arg1, arg2, arg3) => { console.log(arg1, arg2, arg3) });
+ *	let handle = h.on('myevent', (args...) => { console.log(...args) });
  *
- *  h.emit('myevent', 1, 2, 3); // > 1, 2, 3
- *  h.off('myevent', cbHandle); // now that cb is removed from myevent's list of callbacks
+ *  hub.emit('myevent', 1, 2, 3); // > 1, 2, 3
+ *  hub.off('myevent', handle); // callback is removed from myevent's list of callbacks
  *
- *  let cbHandle = h.once('myevent', () => { console.log('cb called') });
- *  h.emit('myevent'); // cb gets called, then immediately removed
- *  h.off('myevent', cbHandle); // error, cb is already removed (although this will work if no 'myevent' is emmitted first)
+ *  let handle = hub.once('myevent', () => { console.log('cb called') });
+ *  hub.emit('myevent'); // callback is called, then immediately removed
+ *  hub.off('myevent', handle); // error, callback is already removed
  *
  */
+
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
 
 export class EventHub {
 	constructor() {
