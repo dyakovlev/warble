@@ -21,7 +21,7 @@ class Overlay {
 	constructor(hub){
 		this.emit = hub.emit;
 
-		hub.on('loadingproject', () => { this.show(this.OVERLAYS.WAIT) });
+		hub.on('projectloadstarted', () => { this.show(this.OVERLAYS.WAIT) });
 		hub.on('loadedproject', this.hide);
 		hub.on('projectloadfailed', (err) => { this.show(this.OVERLAYS.ERROR, err) });
 
@@ -78,7 +78,7 @@ class Controls {
 	}
 
 	makeClickControl(eventToEmit){
-		return (evt) => {
+		return () => {
 			button.addClass('active');
 			this.$allControls.not(button).removeClass('active');
 			this.emit(eventToEmit);
@@ -158,16 +158,17 @@ class RecordingModal {
 
 	show(){
 		this.$modal.show();
-		this.interval = window.setInterval(() => { this.countdown(this.count--) }, 1000);
+		// TODO switch 1-second interval to something off the metronome
+		this.interval = window.setInterval(() => { this.countdown() }, 1000);
 	}
 
 	countdown(timeToGo){
-		if (timeToGo == 0){
+		if (this.count == 0){
 			window.clearInterval(this.interval);
 			this.count = 3;
 			this.recorder.start();
 		} else {
-			this.$countdown.html(timeToGo);
+			this.$countdown.html(this.count);
 		}
 	}
 

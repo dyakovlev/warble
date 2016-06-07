@@ -91,4 +91,13 @@ https://github.com/bcherny/uxhr good reference for xhr
 
 TODO icky, addClip and clipadded events. generally events in Project are fucky
 
+## 5/30/16
 
+### events vs. function calls
+
+#### events
+- caused by activity from backend or user interaction
+- one to many consumers (but not always many consumers)
+
+#### method calls
+-
