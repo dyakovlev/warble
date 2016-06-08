@@ -1,0 +1,9 @@
+{
+  "name": "warble",
+  "description": "sound sketchng webapp",
+  "keywords": [ ],
+  "image": "heroku/go:1.6",
+  "mount_dir": "src/github.com/dyakovlev/warble",
+  "website": "http://github.com/dyakovlev/warble",
+  "repository": "http://github.com/dyakovlev/warble"
+}
