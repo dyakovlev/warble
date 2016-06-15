@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 )
 
@@ -9,16 +8,14 @@ import (
 type Clip struct {
 }
 
-func (m Session) name() string { return "clip" }
-
-func (m *Clip) Initialize(db *sql.DB, r *http.Request) *Clip {
+func InitClip(db *Database, r *http.Request) (clip *Clip, err error) {
 
 }
 
-func (m *Clip) GetById(id int) *Clip {
+func LoadClip(db *Database, id int) (clip *Clip, err error) {
 
 }
 
-func (m *Clip) Upsert(r Row) (success bool) {
+func (m *Clip) Store() (id int) {
 
 }

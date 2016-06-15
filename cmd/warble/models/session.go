@@ -1,29 +1,27 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 )
 
 // a Session model represents a logged-in session
 type Session struct {
-	sid           int  // session id (primary key)
-	authenticated bool // has the user logged in
-	group         int  // what group does the logged-in user belong to
-	seen          Time // last seen
-	uid           int  // associated user (if authenticated)
-	pid           int  // associated project (last one worked on, for convenience)
+	sid   int  // session id (primary key)
+	auth  bool // has the user logged in
+	group int  // what group does the logged-in user belong to
+	seen  Time // last seen
+	uid   int  // associated user (if authenticated)
+	pid   int  // associated project (last one worked on, for convenience)
 }
 
-func (m Session) name() string { return "session" }
-
-func InitSession(db *sql.DB, r *http.Request) (session *Session, err error) {
+func InitSession(db *Database, r *http.Request) (session *Session, err error) {
 	if rawCookie, noCookie := r.Cookie(SessionKey); noCookie != nil {
-		if sid, badCookie := decode(rawCookie); badCookie != nil {
-			if session, noSession := LoadSession(sid); noSession != nil {
+		if id, badCookie := decode(rawCookie); badCookie != nil {
+			if session, noSession := LoadSession(db, id); noSession != nil {
 				session.seen = time.Now()
-				session.Upsert()
+				session.Store(db)
+
 				return &session, nil
 			}
 		}
@@ -36,18 +34,20 @@ func InitSession(db *sql.DB, r *http.Request) (session *Session, err error) {
 	}
 
 	newSession := Session{nil, false, All, time.Now()}
-	sid := newSession.Store()
+	newId := newSession.Store()
 
 	// TODO set the sid cookie
 
 	return &newSession, nil
 }
 
-func (m *Session) Load(id int) *Session {
-
+func LoadSession(db *Database, id int) (session *Session, err error) {
+	if r, err := db.Load("session", id); err != nil {
+		return &Session{r.sid, r.auth, r.group, r.seen, r.uid, r.pid}, nil
+	}
 }
 
-func (m *Session) Store() (sid int) {
+func (m *Session) Store() (id int) {
 
 }
 

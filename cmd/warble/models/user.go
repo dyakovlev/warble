@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 )
 
@@ -9,16 +8,14 @@ import (
 type User struct {
 }
 
-func (m Session) name() string { return "user" }
-
-func (m *User) Initialize(db *sql.DB, r *http.Request) *User {
+func InitUser(db *Database, r *http.Request) (user *User, err error) {
 
 }
 
-func (m *User) GetById(id int) *User {
+func LoadUser(id int) (user *User, err error) {
 
 }
 
-func (m *User) Upsert(r Row) (success bool) {
+func (m *User) Store() (id int) {
 
 }

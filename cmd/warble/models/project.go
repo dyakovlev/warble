@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 )
 
@@ -9,15 +8,13 @@ import (
 type Project struct {
 }
 
-func (m Project) name() string { return "project" }
-
-func (m Project) Initialize(db *sql.DB, r *http.Request) *Project {
+func InitProject(db *Database, r *http.Request) (project *Project, err error) {
 
 }
 
-func (m *Project) GetById(id int) *Project {
+func LoadProject(db *Database, id int) (project *Project, err error) {
 
 }
 
-func (m *Project) Upsert(r Row) (success bool) {
+func (m *Project) Store() (id int) {
 }
