@@ -12,6 +12,14 @@ func RootHandler(c *gin.Context) {
 
 }
 
+func GetUserHandler(c *gin.Context) {
+
+}
+
+func SaveUserHandler(c *gin.Context) {
+
+}
+
 func GetConfigHandler(c *gin.Context) {
 
 }
