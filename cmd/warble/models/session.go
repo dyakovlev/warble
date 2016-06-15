@@ -7,12 +7,12 @@ import (
 
 // a Session model represents a logged-in session
 type Session struct {
-	sid   int  // session id (primary key)
-	auth  bool // has the user logged in
-	group int  // what group does the logged-in user belong to
-	seen  Time // last seen
-	uid   int  // associated user (if authenticated)
-	pid   int  // associated project (last one worked on, for convenience)
+	sid   int       // session id (primary key)
+	auth  bool      // has the user logged in
+	group int       // what group does the logged-in user belong to
+	seen  time.Time // last seen
+	uid   int       // associated user (if authenticated)
+	pid   int       // associated project (last one worked on, for convenience)
 }
 
 func InitSession(db *Database, r *http.Request) (session *Session, err error) {
