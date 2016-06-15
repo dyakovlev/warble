@@ -1,58 +1,70 @@
 package main
 
 import (
-	"routes"
-	"session"
-	"groups"
+	"os"
+	"fmt"
+	"database/sql"
 
 	"github.com/gin-tonic/gin"
 )
 
 func main() {
-	// grab config from environment
-
-	// make conns to storage
-
-	// init server
-	router := gin.New()
-	router.Use(gin.Logger())
+	router := gin.Default()
+	router.Static("/static", "static") // TODO eventually replace with CDN
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 
-	// assets
-	router.Static("/static", "static")
+	db := sql.Open("postgres", os.Getenv("DB_URL"))
+	ss := SessionStore{db}
 
-	// routes
-	router.GET("/about",	 func(ctx *gin.Context) { ctx.HTML(http.StatusOK, "about.tmpl.html") })
-	router.GET("/status",	 authorize(groups.Admin,	routes.Status))
-	router.GET("/",			 authorize(groups.All,		routes.GetApp))
-	router.GET("/config",	 authorize(groups.LoggedIn,	routes.GetConfig))
-	router.POST("/config",	 authorize(groups.LoggedIn, routes.SaveConfig))
-	router.GET("/clip",		 authorize(groups.LoggedIn, routes.GetClip))
-	router.POST("/clip",	 authorize(groups.LoggedIn, routes.SaveClip))
+	router.GET("/about",	 StaticPage("about"))
+	router.GET("/status",	 WithSession(ss), WithGroup(Admin), StatusHandler)
+	router.GET("/",			 WithSession(ss), RootHandler)
 
-	// serve
-	router.Run()
+	app := router.Group("/", WithSession(ss), WithGroup(User))
+	{
+		router.GET("/config",	 GetConfigHandler)
+		router.POST("/config",	 SaveConfigHandler)
+		router.GET("/clip",		 GetClipHandler)
+		router.POST("/clip",	 SaveClipHandler)
+	}
+
+	router.Run(":" + os.Getenv("PORT"))
+	// RunTLS for logged-in stuff
 }
 
-func authorize(group groups.Group, wrappedRoute func(s *session.Session)) func(ctx *gin.Context) {
+
+func StaticPage(page string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if ok, s := session.Initialize(ctx); ok {
-
-		} else {
-			return
-		}
-
-		if groups.Admit(group, s) {
-
-		} else {
-			return
-		}
-
-		if ok, out := wrappedRoute(s); ok {
-
-		} else {
-			return
-		}
+		ctx.HTML(http.StatusOK, page + ".tmpl.html")
 	}
 }
 
+// retrieves or generates a session
+func WithSession(ss *SessionStore) gin.HandlerFunc {
+	return func(ctx *Context) {
+		// grab session token from request
+		// see if it's in ss
+		// load session into ctx if it is
+		// make a new one if not
+
+		c.Next()
+	}
+}
+
+
+type Group int
+const (
+	Admin Group iota
+	User
+)
+
+// generates a middleware that verifies request group fits passed param
+func WithGroup(g Group) gin.HandlerFunc {
+	return func(ctx *Context) {
+		// get user permissions
+		// if it satisfies g, pass
+		// if not, abort with 500
+
+		c.Next()
+	}
+}

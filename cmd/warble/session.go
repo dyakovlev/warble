@@ -1,8 +1,24 @@
-package session
+package main
 
 import (
+	"database/sql"
 	"github.com/gin-gonic/gin"
 )
+
+// SessionStore holds a bunch of sessions
+
+type SessionStore struct {
+	db *sql.DB			// keep a DB ref around
+}
+
+func (ss *SessionStore) Lookup(sid string) *Session {
+
+}
+
+func (ss *SessionStore) New() *Session {
+
+}
+
 
 type Session struct {
 	sid string // session id
