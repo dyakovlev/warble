@@ -33,15 +33,12 @@ func main() {
 
 	app := router.Group("/", db.WithSession(), InGroup(User))
 	{
-		// CRUD for users
 		router.GET("/user", db.WithUser(), GetUserHandler)
 		router.POST("/user", db.WithUser(), SaveUserHandler)
 
-		// CRUD for projects
 		router.GET("/project", db.WithProject(), GetProjectHandler)
 		router.POST("/project", db.WithProject(), SaveProjectHandler)
 
-		// CRUD for clips
 		router.GET("/clip", db.WithClip(), GetClipHandler)
 		router.POST("/clip", db.WithClip(), SaveClipHandler)
 	}
@@ -77,8 +74,6 @@ func InGroup(minGroup Group) gin.HandlerFunc {
 			return
 		}
 
-		// guess we're cool.
-
 		ctx.Next()
 	}
 }
@@ -94,15 +89,3 @@ const (
 func XHR(ctx *gin.Context) gin.HandlerFunc {
 	ctx.Set("is_xhr", r.Header.Get("X-Requested-With") == "XMLHttpRequest")
 }
-
-func InternalError(ctx *gin.Context, err string, errCode int) {
-	// TODO log the error
-
-	ctx.String(errCode, http.StatusText(errCode)+": "+err)
-}
-
-// descriptive error strings
-const (
-	INSUFFICIENT_PRIVS = "You can't do that."
-	NOT_LOGGED_IN      = "You're not logged in."
-)
