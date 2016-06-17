@@ -9,42 +9,47 @@ import (
 	"github.com/gin-tonic/gin"
 )
 
+// environment variables
 const (
 	port        = "PORT"
 	postgresURL = "DB_URL"
-	sessionKey  = "sid"
+	encIDKey    = "ENCID_KEY"
 )
 
 func main() {
 	router := gin.Default()
 	router.Static("/static", "static")
 	router.LoadHTMLGlob("templates/*.tmpl.html")
-	router.Use(XHR)
+	router.Use(XHRMiddleware)
 
-	db := Database{sql.Open("postgres", os.Getenv(postgresURL))}
+	db := Database{sql.Open("postgres", os.Getenv(postgresURL)), NewIDCrypter(os.Getenv(encIDKey))}
 
 	router.GET("/about", staticPage("about"))
-	router.GET("/status", db.WithSession(), InGroup(Admin), StatusHandler)
 
-	router.GET("/", db.WithSession(), RootHandler)
+	router.GET("/status", db.withSession(), InGroup(Admin), StatusHandler)
 
-	router.GET("/auth", db.WithSession(), GetAuthHandler)
-	router.POST("/auth", db.WithSession(), DoAuthHandler)
+	router.GET("/", db.withSession(), staticPage("index"))
+	router.GET("/auth", db.withSession(), staticPage("auth"))
+	router.POST("/auth", db.withSession(), DoAuthHandler)
 
-	app := router.Group("/", db.WithSession(), InGroup(User))
+	app := router.Group("/", db.withSession(), InGroup(User))
 	{
-		router.GET("/user", db.WithUser(), GetUserHandler)
-		router.POST("/user", db.WithUser(), SaveUserHandler)
+		router.GET("/user", db.withUser(), GetUserHandler)
+		router.POST("/user", db.withUser(), SaveUserHandler)
 
-		router.GET("/project", db.WithProject(), GetProjectHandler)
-		router.POST("/project", db.WithProject(), SaveProjectHandler)
+		router.GET("/project", db.withProject(), GetProjectHandler)
+		router.POST("/project", db.withProject(), SaveProjectHandler)
 
-		router.GET("/clip", db.WithClip(), GetClipHandler)
-		router.POST("/clip", db.WithClip(), SaveClipHandler)
+		router.GET("/clip", db.withClip(), GetClipHandler)
+		router.POST("/clip", db.withClip(), SaveClipHandler)
 	}
 
 	router.Run(":" + os.Getenv(port))
-	// RunTLS for logged-in stuff
+	// TODO RunTLS for logged-in stuff
+}
+
+func XHRMiddleware(ctx *gin.Context) gin.HandlerFunc {
+	ctx.Set("is_xhr", r.Header.Get("X-Requested-With") == "XMLHttpRequest")
 }
 
 func staticPage(page string) gin.HandlerFunc {
@@ -55,10 +60,10 @@ func staticPage(page string) gin.HandlerFunc {
 
 func InGroup(minGroup Group) gin.HandlerFunc {
 	return func(ctx *Context) {
-		s := ctx.MustGet(SessionKey)
+		s := ctx.MustGet("session")
 
 		// only All is allowed to be unauthenticated
-		if !s.authenticated && mInGroup < All {
+		if !s.auth && minGroup < All {
 			if ctx.Get("is_xhr") {
 				InternalError(ctx, NOT_LOGGED_IN, http.StatusForbidden)
 			} else {
@@ -85,7 +90,3 @@ const (
 	User               // regular logged-in user
 	All                // any user, logged-in or logged-out
 )
-
-func XHR(ctx *gin.Context) gin.HandlerFunc {
-	ctx.Set("is_xhr", r.Header.Get("X-Requested-With") == "XMLHttpRequest")
-}

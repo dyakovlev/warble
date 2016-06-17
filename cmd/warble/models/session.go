@@ -7,27 +7,28 @@ import (
 
 // a Session model represents a logged-in session
 type Session struct {
+	// in schema
 	sid   int       // session id (primary key)
 	auth  bool      // has the user logged in
 	group int       // what group does the logged-in user belong to
 	seen  time.Time // last seen
 	uid   int       // associated user (if authenticated)
 	pid   int       // associated project (last one worked on, for convenience)
+
+	// not in schema
+	db *Database // ref to our database connection
 }
 
-func InitSession(db *Database, r *http.Request) (session *Session, err error) {
+func InitSession(db *Database, r *http.Request) (s *Session, err error) {
 	if rawCookie, noCookie := r.Cookie(SessionKey); noCookie != nil {
 		if id, badCookie := decode(rawCookie); badCookie != nil {
-			if session, noSession := LoadSession(db, id); noSession != nil {
-				session.seen = time.Now()
-				session.Store(db)
-
-				return &session, nil
+			s := Session{db: db}
+			if noSession := s.load(id); noSession != nil {
+				s.updateSeen()
+				return &s, nil
 			}
 		}
 	}
-
-	// if we got here something is fucky or there's no session, make a new one
 
 	if badCookie || noSession {
 		// TODO log
@@ -41,24 +42,27 @@ func InitSession(db *Database, r *http.Request) (session *Session, err error) {
 	return &newSession, nil
 }
 
-func LoadSession(db *Database, id int) (session *Session, err error) {
-	if r, err := db.Load("session", id); err != nil {
-		return &Session{r.sid, r.auth, r.group, r.seen, r.uid, r.pid}, nil
+func (s *Session) load(id int) (err error) {
+	if row, err := s.db.loadRow("session", id); err != nil {
+		err = row.Scan(&s.sid, &s.auth, &s.group, &s.seen, &s.uid, &s.pid)
 	}
 }
 
-func (m *Session) Store() (id int) {
-
+func (s *Session) store() (id int, err error) {
+	id, err := s.db.storeRow("session", &s.sid, &s.auth, &s.group, &s.seen, &s.uid, &s.pid)
 }
 
-func (m *Session) Expire() (success bool) {
-
+func (s *Session) expire() (err error) {
+	s.auth = false
+	_, err := s.store()
 }
 
-func decode(token string) int {
-
+func (s *Session) authorize() (err error) {
+	s.auth = true
+	_, err := s.store()
 }
 
-func encode(token int) string {
-
+func (s *Session) updateSeen() (err error) {
+	s.seen = time.Now()
+	_, err := s.store()
 }
