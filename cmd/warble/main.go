@@ -9,7 +9,7 @@ import (
 	"github.com/gin-tonic/gin"
 )
 
-// environment variables
+// environment variable names
 const (
 	port        = "PORT"
 	postgresURL = "DB_URL"
@@ -22,24 +22,32 @@ func main() {
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
-	db := Database{sql.Open("postgres", os.Getenv(postgresURL)), NewIDCrypter(os.Getenv(encIDKey))}
+	db := Database{sql.Open("postgres", os.Getenv(postgresURL)), NewIDCodec(os.Getenv(encIDKey))}
 
 	router.GET("/about", staticPage("about"))
 
 	router.GET("/status", db.withSession(), InGroup(Admin), StatusHandler)
 
+	// GET root page, redir to active project if one is in session
 	router.GET("/", db.withSession(), staticPage("index"))
+
+	// GET login page, POST auth or new-account endpoints
 	router.GET("/auth", db.withSession(), staticPage("auth"))
 	router.POST("/auth", db.withSession(), DoAuthHandler)
+	router.POST("/auth/new", db.withSession(), DoNewAccountHandler)
 
+	// logged-in app endpoints
 	app := router.Group("/", db.withSession(), InGroup(User))
 	{
+		// modify user profile
 		router.GET("/user", db.withUser(), GetUserHandler)
 		router.POST("/user", db.withUser(), SaveUserHandler)
 
+		// modify project
 		router.GET("/project", db.withProject(), GetProjectHandler)
 		router.POST("/project", db.withProject(), SaveProjectHandler)
 
+		// modify clip audio file
 		router.GET("/clip", db.withClip(), GetClipHandler)
 		router.POST("/clip", db.withClip(), SaveClipHandler)
 	}
@@ -67,6 +75,7 @@ func InGroup(minGroup Group) gin.HandlerFunc {
 			if ctx.Get("is_xhr") {
 				InternalError(ctx, NOT_LOGGED_IN, http.StatusForbidden)
 			} else {
+				// TODO last page url param to redir to cur page after auth
 				ctx.Redirect(http.StatusSeeOther, "/auth")
 			}
 			ctx.Abort()

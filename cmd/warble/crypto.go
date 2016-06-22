@@ -7,12 +7,13 @@ import (
 	"strconv"
 )
 
-func encryptPass() {
+func encryptPass() string {
 	// https://godoc.org/golang.org/x/crypto/scrypt
 }
 
-func verifyPass() {
-
+func verifyPass(encPass string, rawCandidate string) bool {
+	// encrypt supplied pass
+	// time-insensitive string compare
 }
 
 func salt() {
@@ -27,7 +28,7 @@ type IDCodec struct {
 }
 
 func NewIDCodec(key []byte) IDCodec {
-	c, err := aes.NewCipher([]byte(key_text))
+	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		fmt.Printf("Error: NewCipher(%d bytes) = %s", len(key), err)
 		os.Exit(-1)

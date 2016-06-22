@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
+	"strings"
 
 	"github.com/gin-tonic/gin"
 )
@@ -40,7 +41,7 @@ func (db *Database) withClip() gin.HandlerFunc {
 	return db.withModel("clip", InitClip)
 }
 
-func (db *Database) loadRow(table string, id int) (r *sql.Row, err error) {
+func (db *Database) loadRow(table string, id int) (res *sql.Row, err error) {
 	// TODO sanitize `table` param
 
 	res, err := db.DB.QueryRow("SELECT * FROM ? WHERE id=?", table, id)
@@ -55,10 +56,24 @@ func (db *Database) loadRow(table string, id int) (r *sql.Row, err error) {
 	return res, err
 }
 
-func (db *Database) storeRow(table string, params ...interface{}) (lastId int, err error) {
-	// TODO sanitize params (which ones? all? find a lib?)
+func (db *Database) storeRow(table string, fields ...string, params ...interface{}) (pkey int, err error) {
+	// TODO sanitize params
 
-	res, err := db.DB.Query("INSERT INTO ? VALUES ()", params...)
+	pkey := params[0]
 
-	return res, err
+	if pkey != nil {
+		qs := strings.TrimRight(strings.Repeat("?,", len(params)), ",")
+		pkey, err := db.DB.Query("INSERT INTO ? VALUES ("+qs+")", table, params...)
+	} else {
+		fieldString := strings.Join(fields, "=?, ") + "=?"
+		append(params, pkey) // fill out the id param
+		_, err := db.DB.Query("UPDATE ? SET ("+fieldString+") WHERE id=?", table, params...)
+	}
+
+	switch {
+	case err != nil:
+		// log a fatal error
+	}
+
+	return pkey, err
 }
