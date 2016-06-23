@@ -10,14 +10,15 @@ import (
 
 type Initializer func(db *Database, r *http.Request)
 
-type Database struct {
-	DB      *sql.DB    // db connection
+// container for initialized resource singletons
+type Resource struct {
+	db      *sql.DB    // db connection
 	crypter *IDCrypter // initialized id crypter (for public-facing IDs)
 }
 
-func (db *Database) withModel(name string, initializer Initializer) gin.HandlerFunc {
+func (r *Resource) withModel(name string, initializer Initializer) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		model, err := initializer(db, ctx.Request)
+		model, err := initializer(r, ctx.Request)
 		// todo handle err
 
 		ctx.Set(name, model)
@@ -25,26 +26,26 @@ func (db *Database) withModel(name string, initializer Initializer) gin.HandlerF
 	}
 }
 
-func (db *Database) withSession() gin.HandlerFunc {
-	return db.withModel("session", InitSession)
+func (r *Resource) withSession() gin.HandlerFunc {
+	return r.withModel("session", InitSession)
 }
 
-func (db *Database) withUser() gin.HandlerFunc {
-	return db.withModel("user", InitUser)
+func (r *Resource) withUser() gin.HandlerFunc {
+	return r.withModel("user", InitUser)
 }
 
-func (db *Database) withProject() gin.HandlerFunc {
-	return db.withModel("project", InitProject)
+func (r *Resource) withProject() gin.HandlerFunc {
+	return r.withModel("project", InitProject)
 }
 
-func (db *Database) withClip() gin.HandlerFunc {
-	return db.withModel("clip", InitClip)
+func (r *Resource) withClip() gin.HandlerFunc {
+	return r.withModel("clip", InitClip)
 }
 
-func (db *Database) loadRow(table string, id int) (res *sql.Row, err error) {
+func (r *Resource) loadRow(table string, id int) (res *sql.Row, err error) {
 	// TODO sanitize `table` param
 
-	res, err := db.DB.QueryRow("SELECT * FROM ? WHERE id=?", table, id)
+	res, err := r.db.QueryRow("SELECT * FROM ? WHERE id=?", table, id)
 
 	switch {
 	case err == sql.ErrNoRows:
@@ -56,19 +57,25 @@ func (db *Database) loadRow(table string, id int) (res *sql.Row, err error) {
 	return res, err
 }
 
-func (db *Database) storeRow(table string, fields ...string, params ...interface{}) (pkey int, err error) {
+func (r *Resource) storeRow(table string, fields []string, params ...interface{}) (pkey int, err error) {
 	// TODO sanitize params
 
 	pkey := params[0]
 
-	if pkey != nil {
+	// if supplied model doesn't have a defined primary key value, we make a new row and return
+	// the id (which the model should then store)
+
+	if pkey == nil {
 		qs := strings.TrimRight(strings.Repeat("?,", len(params)), ",")
-		pkey, err := db.DB.Query("INSERT INTO ? VALUES ("+qs+")", table, params...)
+		res, err := r.db.Exec("INSERT INTO ? VALUES ("+qs+")", table, params...)
+		pkey = res.LastInsertId()
 	} else {
 		fieldString := strings.Join(fields, "=?, ") + "=?"
 		append(params, pkey) // fill out the id param
-		_, err := db.DB.Query("UPDATE ? SET ("+fieldString+") WHERE id=?", table, params...)
+		_, err := r.db.Exec("UPDATE ? SET ("+fieldString+") WHERE id=?", table, params...)
 	}
+
+	// TODO what errors do we need to handle here
 
 	switch {
 	case err != nil:

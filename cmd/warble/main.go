@@ -22,34 +22,37 @@ func main() {
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
-	db := Database{sql.Open("postgres", os.Getenv(postgresURL)), NewIDCodec(os.Getenv(encIDKey))}
+	resource := Resource{
+		db:      sql.Open("postgres", os.Getenv(postgresURL)),
+		crypter: NewIDCodec(os.Getenv(encIDKey)),
+	}
 
 	router.GET("/about", staticPage("about"))
 
-	router.GET("/status", db.withSession(), InGroup(Admin), StatusHandler)
+	router.GET("/status", resource.withSession(), InGroup(Admin), StatusHandler)
 
 	// GET root page, redir to active project if one is in session
-	router.GET("/", db.withSession(), staticPage("index"))
+	router.GET("/", resource.withSession(), staticPage("index"))
 
 	// GET login page, POST auth or new-account endpoints
-	router.GET("/auth", db.withSession(), staticPage("auth"))
-	router.POST("/auth", db.withSession(), DoAuthHandler)
-	router.POST("/auth/new", db.withSession(), DoNewAccountHandler)
+	router.GET("/auth", resource.withSession(), staticPage("auth"))
+	router.POST("/auth", resource.withSession(), DoAuthHandler)
+	router.POST("/auth/new", resource.withSession(), DoNewAccountHandler)
 
 	// logged-in app endpoints
-	app := router.Group("/", db.withSession(), InGroup(User))
+	app := router.Group("/", resource.withSession(), InGroup(User))
 	{
 		// modify user profile
-		router.GET("/user", db.withUser(), GetUserHandler)
-		router.POST("/user", db.withUser(), SaveUserHandler)
+		router.GET("/user", resource.withUser(), GetUserHandler)
+		router.POST("/user", resource.withUser(), SaveUserHandler)
 
 		// modify project
-		router.GET("/project", db.withProject(), GetProjectHandler)
-		router.POST("/project", db.withProject(), SaveProjectHandler)
+		router.GET("/project", resource.withProject(), GetProjectHandler)
+		router.POST("/project", resource.withProject(), SaveProjectHandler)
 
 		// modify clip audio file
-		router.GET("/clip", db.withClip(), GetClipHandler)
-		router.POST("/clip", db.withClip(), SaveClipHandler)
+		router.GET("/clip", resource.withClip(), GetClipHandler)
+		router.POST("/clip", resource.withClip(), SaveClipHandler)
 	}
 
 	router.Run(":" + os.Getenv(port))

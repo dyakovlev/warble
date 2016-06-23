@@ -13,10 +13,10 @@ type User struct {
 	pass  string // salted, hashed password
 
 	// not in schema
-	db *Database
+	resource *Resource // ref to initialized resources
 }
 
-func InitUser(db *Database, r *http.Request) (user *User, err error) {
+func InitUser(res *Resource, req *http.Request) (*User, error) {
 
 }
 

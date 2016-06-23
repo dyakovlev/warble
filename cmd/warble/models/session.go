@@ -16,13 +16,13 @@ type Session struct {
 	pid   int       // associated project (last one worked on, for convenience)
 
 	// not in schema
-	db *Database // ref to our database connection
+	resource *Resource // ref to initialized resources
 }
 
-func InitSession(db *Database, r *http.Request) (s *Session, err error) {
-	if rawCookie, noCookie := r.Cookie(SessionKey); noCookie != nil {
+func InitSession(res *Resource, req *http.Request) (*Session, error) {
+	if rawCookie, noCookie := req.Cookie(SessionKey); noCookie != nil {
 		if id, badCookie := decode(rawCookie); badCookie != nil {
-			s := Session{db: db}
+			s := Session{resource: res}
 			if noSession := s.load(id); noSession != nil {
 				s.updateSeen()
 				return &s, nil
@@ -44,13 +44,13 @@ func InitSession(db *Database, r *http.Request) (s *Session, err error) {
 }
 
 func (s *Session) load(id int) (err error) {
-	if row, err := s.db.loadRow("session", id); err != nil {
+	if row, err := s.resource.loadRow("session", id); err != nil {
 		err = row.Scan(&s.id, &s.auth, &s.group, &s.seen, &s.uid, &s.pid)
 	}
 }
 
 func (s *Session) store() (id int, err error) {
-	id, err := s.db.storeRow(
+	id, err := s.resource.storeRow(
 		"session",
 		[]string{"id", "auth", "group", "seen", "uid", "pid"},
 		&s.id, &s.auth, &s.group, &s.seen, &s.uid, &s.pid,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 )
 
 // a Project model represents a project configuration (where a project is a song)
@@ -13,14 +14,14 @@ type Project struct {
 	modified time.Time // last modified timestamp
 
 	// not in schema
-	db *Database
+	resource *Resource // ref to initialized resources
 }
 
-func InitProject(db *Database, r *http.Request) (project *Project, err error) {
+func InitProject(res *Resource, req *http.Request) (project *Project, err error) {
 
 }
 
-func (p *Project) load(db *Database, id int) (err error) {
+func (p *Project) load(id int) (err error) {
 
 }
 
