@@ -12,8 +12,6 @@ func GetAuthHandler(c *gin.Context) {
 
 	// se url param expires the session (clears session cookie)
 
-	// TODO this can probably be done in JS..
-
 	if c.DefaultQuery("se", nil) != nil {
 		// TODO log
 		ExpireCookie(c, sessionCookie)
