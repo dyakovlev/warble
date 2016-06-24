@@ -20,6 +20,7 @@ func GetAuthHandler(c *gin.Context) {
 		c.HTML(http.StatusOk, "auth", gin.H{
 			login:    false,
 			register: true,
+			email:    nil,
 		})
 		return
 	}
@@ -50,6 +51,7 @@ func GetAuthHandler(c *gin.Context) {
 	c.HTML(http.StatusOk, "register", gin.H{
 		login:    true,
 		register: true,
+		email:    nil,
 	})
 }
 

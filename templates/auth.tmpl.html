@@ -1,0 +1,29 @@
+{{template "header"}}
+<!-- body -->
+<style scoped>
+</style>
+
+this is the auth template! yay!
+
+<br>
+
+{{ if .email }}
+the email var is set to {{ .email }}
+{{ else }}
+the email var is unset
+{{ end }}
+
+<br>
+
+{{ if .login }}
+this is the login section
+{{ end }}
+
+<br>
+
+{{ if .register }}
+this is the register section
+{{ end }}
+
+<!-- /body -->
+{{template "footer"}}

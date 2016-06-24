@@ -9,8 +9,8 @@ import (
 	"github.com/gin-tonic/gin"
 )
 
+// environment variables
 const (
-	// environment variables
 	port        = "PORT"
 	postgresURL = "DB_URL"
 	encIDKey    = "ENCID_KEY"
