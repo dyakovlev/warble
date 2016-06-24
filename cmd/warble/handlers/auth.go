@@ -120,7 +120,7 @@ func DoNewAccountHandler(c *gin.Context) {
 
 	session.authorize(user.id)
 
-	// TODO add success message
+	// TODO add success message to flash
 
 	c.Redirect(http.StatusSeeOther, "/profile")
 }
