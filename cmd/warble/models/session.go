@@ -35,10 +35,11 @@ func InitSession(res *Resource, req *http.Request) (*Session, error) {
 	}
 
 	newSession := Session{group: All, seen: time.Now()}
-	newId, err := newSession.store()
-	newSession.id = newId
+	err := newSession.store()
 
-	// TODO set the sid cookie
+	if err != nil {
+		// TODO set the sid cookie
+	}
 
 	return &newSession, nil
 }
@@ -49,8 +50,8 @@ func (s *Session) load(id int) (err error) {
 	}
 }
 
-func (s *Session) store() (id int, err error) {
-	id, err := s.resource.storeRow(
+func (s *Session) store() error {
+	s.resource.storeRow(
 		"session",
 		[]string{"id", "auth", "group", "seen", "uid", "pid"},
 		&s.id, &s.auth, &s.group, &s.seen, &s.uid, &s.pid,
@@ -60,11 +61,26 @@ func (s *Session) store() (id int, err error) {
 func (s *Session) expire() (err error) {
 	s.auth = false
 	_, err := s.store()
+
+	if err != nil {
+		// TODO log session expiration error
+	}
 }
 
-func (s *Session) authorize(id int) (err error) {
+func (s *Session) authorize(uid int) (err error) {
 	s.auth = true
-	s.id = id
+	s.uid = id
+	_, err := s.store()
+
+	if err != nil {
+		s.auth = false
+		s.uid = nil
+	}
+}
+
+func (s *Session) detach() (err error) {
+	s.auth = false
+	s.uid = nil
 	_, err := s.store()
 }
 

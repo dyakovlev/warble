@@ -35,9 +35,10 @@ func main() {
 	router.GET("/", resource.withSession(), staticPage("index"))
 
 	// GET login page, POST auth or new-account endpoints
-	router.GET("/auth", resource.withSession(), staticPage("auth"))
-	router.POST("/auth", resource.withSession(), DoAuthHandler)
+	router.GET("/auth", resource.withSession(), GetAuthHandler)
 	router.POST("/auth/new", resource.withSession(), DoNewAccountHandler)
+	router.POST("/auth/login", resource.withSession(), DoAuthHandler)
+	router.POST("/auth/logout", resource.withSession(), DoLogoutHandler)
 
 	// logged-in app endpoints
 	app := router.Group("/", resource.withSession(), InGroup(User))

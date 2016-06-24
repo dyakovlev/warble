@@ -69,6 +69,7 @@ func (r *Resource) storeRow(table string, fields []string, params ...interface{}
 		qs := strings.TrimRight(strings.Repeat("?,", len(params)), ",")
 		res, err := r.db.Exec("INSERT INTO ? VALUES ("+qs+")", table, params...)
 		pkey = res.LastInsertId()
+		// TODO make sure pkey refs back into the model it's set from
 	} else {
 		fieldString := strings.Join(fields, "=?, ") + "=?"
 		append(params, pkey) // fill out the id param

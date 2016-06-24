@@ -8,8 +8,7 @@ import (
 type User struct {
 	// in schema
 	id    int
-	email string
-	salt  string // salt used to generate pass column
+	email string // used as login name
 	pass  string // salted, hashed password
 
 	// not in schema
@@ -24,10 +23,10 @@ func (u *User) load(id int) (err error) {
 
 }
 
-func (u *User) loadByName(username string) (err error) {
+func (u *User) loadByName(uidFromSession int, username string) (err error) {
 
 }
 
-func (u *User) Store() (id int) {
+func (u *User) store() error {
 
 }

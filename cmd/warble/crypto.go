@@ -4,20 +4,20 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
+	"log"
 	"strconv"
+
+	"github.com/elithrar/simple-scrypt"
 )
 
-func encryptPass() string {
-	// https://godoc.org/golang.org/x/crypto/scrypt
+func encryptPass(rawPassword string) string {
+	hash, err := scrypt.GenerateFromPassword([]byte(rawPassword), scrypt.DefaultParams)
+	return hash
 }
 
 func verifyPass(encPass string, rawCandidate string) bool {
-	// encrypt supplied pass
-	// time-insensitive string compare
-}
-
-func salt() {
-
+	err := scrypt.CompareHashAndPassword(encPass, []byte(rawCandidate))
+	return err == nil
 }
 
 // TODO generate this randomly? store in env?
