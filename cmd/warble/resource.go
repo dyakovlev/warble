@@ -5,7 +5,7 @@ import (
 	_ "github.com/lib/pq"
 	"strings"
 
-	"github.com/gin-tonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 type Initializer func(db *Database, r *http.Request)

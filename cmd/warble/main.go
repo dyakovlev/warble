@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-tonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // environment variables
 const (
-	port        = "PORT"
-	postgresURL = "DB_URL"
-	encIDKey    = "ENCID_KEY"
+	Port        = "PORT"
+	PostgresURL = "DATABASE_URL"
+	EncIDKey    = "ENCID_KEY"
 )
 
 func main() {
@@ -23,8 +23,8 @@ func main() {
 	router.Use(XHRMiddleware)
 
 	resource := Resource{
-		db:      sql.Open("postgres", os.Getenv(postgresURL)),
-		crypter: NewIDCodec(os.Getenv(encIDKey)),
+		db:      sql.Open("postgres", os.Getenv(PostgresURL)),
+		crypter: NewIDCodec(os.Getenv(EncIDKey)),
 	}
 
 	router.GET("/about", staticPage("about"))
@@ -54,7 +54,7 @@ func main() {
 		router.POST("/clip", resource.withClip(), SaveClipHandler)
 	}
 
-	router.Run(":" + os.Getenv(port))
+	router.Run(":" + os.Getenv(Port))
 	// TODO RunTLS for logged-in stuff
 }
 

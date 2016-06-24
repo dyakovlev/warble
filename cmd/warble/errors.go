@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/gin-tonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func InternalError(ctx *gin.Context, err string, errCode int) {

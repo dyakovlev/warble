@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/gin-tonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // get user profile page

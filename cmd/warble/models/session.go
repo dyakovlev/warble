@@ -8,12 +8,12 @@ import (
 // a Session model represents a logged-in session
 type Session struct {
 	// in schema
-	id    int       // session id (primary key)
-	auth  bool      // has the user logged in
-	group int       // what group does the logged-in user belong to
-	seen  time.Time // last seen
-	uid   int       // associated user (if authenticated)
-	pid   int       // associated project (last one worked on, for convenience)
+	id   int       // session id (primary key)
+	auth bool      // has the user logged in
+	grp  int       // what group does the logged-in user belong to
+	seen time.Time // last seen
+	uid  int       // associated user (if authenticated)
+	pid  int       // associated project (last one worked on, for convenience)
 
 	// not in schema
 	resource *Resource // ref to initialized resources
@@ -43,15 +43,15 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 
 func (s *Session) load(id int) (err error) {
 	if row, err := s.resource.loadRow("session", id); err != nil {
-		err = row.Scan(&s.id, &s.auth, &s.group, &s.seen, &s.uid, &s.pid)
+		err = row.Scan(&s.id, &s.auth, &s.grp, &s.seen, &s.uid, &s.pid)
 	}
 }
 
 func (s *Session) store() error {
 	s.resource.storeRow(
 		"session",
-		[]string{"id", "auth", "group", "seen", "uid", "pid"},
-		&s.id, &s.auth, &s.group, &s.seen, &s.uid, &s.pid,
+		[]string{"id", "auth", "grp", "seen", "uid", "pid"},
+		&s.id, &s.auth, &s.grp, &s.seen, &s.uid, &s.pid,
 	)
 }
 

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-tonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // cookie names
