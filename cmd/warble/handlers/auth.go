@@ -10,6 +10,20 @@ func GetAuthHandler(c *gin.Context) {
 	session := c.Get("session")
 	redir := c.DefaultQuery("redir", "/")
 
+	// se url param expires the session (clears session cookie)
+
+	// TODO this can probably be done in JS..
+
+	if c.DefaultQuery("se", nil) != nil {
+		// TODO log
+		ExpireCookie(c, sessionCookie)
+		c.HTML(http.StatusOk, "auth", gin.H{
+			login:    false,
+			register: true,
+		})
+		return
+	}
+
 	// why would the user be logged in? handle this case anyway..
 
 	if session.auth {
@@ -18,16 +32,25 @@ func GetAuthHandler(c *gin.Context) {
 	}
 
 	// inactive sessions (user logged out or session expired) get a log-back-in screen
-	// with their email prefilled
 
 	if !session.auth && session.uid {
-		c.HTML(http.StatusOk, "login", userParams)
+		user := User{resource: session.resource}
+		user.load(session.uid)
+		c.HTML(http.StatusOk, "auth", gin.H{
+			login:    true,
+			register: false,
+			email:    ObfuscateEmail(user.email),
+		})
+		return
 	}
 
-	// sessions without an associated uid don't have an account associated with them..
-	// maybe they should make an account.
+	// sessions without an associated uid don't have an account associated with them,
+	// so maybe they should make an account.
 
-	c.HTML(http.StatusOk, "new_account")
+	c.HTML(http.StatusOk, "register", gin.H{
+		login:    true,
+		register: true,
+	})
 }
 
 func DoLogoutHandler(c *gin.Context) {
@@ -47,16 +70,24 @@ func DoAuthHandler(c *gin.Context) {
 
 	user := User{resource: session.resource}
 
-	err = user.loadByName(session.uid, c.PostForm("username"))
+	// if there's an associated user in the session, load by it
 
-	switch {
-	case err == AuthUsernameSessionMismatch:
-		// TODO log
-		session.detach()
-	case err == NoSuchUser:
+	if session.uid != nil {
+		err = user.load(session.uid)
+	} else {
+		err = user.loadByEmail(email)
+	}
+
+	if err == NoSuchUser {
 		// TODO log
 		// TODO add no-user message to flash
 		c.Redirect(http.StatusSeeOther, "/auth")
+	}
+
+	if user.email != c.PostForm("email") {
+		// TODO log
+		// TODO add message
+		session.detach()
 	}
 
 	if verifyPass(user.pass, c.PostForm("password")) {

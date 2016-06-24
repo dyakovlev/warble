@@ -19,14 +19,12 @@ type Session struct {
 	resource *Resource // ref to initialized resources
 }
 
-func InitSession(res *Resource, req *http.Request) (*Session, error) {
-	if rawCookie, noCookie := req.Cookie(SessionKey); noCookie != nil {
-		if id, badCookie := decode(rawCookie); badCookie != nil {
-			s := Session{resource: res}
-			if noSession := s.load(id); noSession != nil {
-				s.updateSeen()
-				return &s, nil
-			}
+func InitSession(r *Resource, c *gin.Context) (*Session, error) {
+	if encSession, badCookie := c.Cookie(sessionCookie); badCookie != nil {
+		s := Session{resource: r}
+		if noSession := s.load(r.crypter.decid(sid)); noSession != nil {
+			s.updateSeen()
+			return &s, nil
 		}
 	}
 
@@ -36,9 +34,8 @@ func InitSession(res *Resource, req *http.Request) (*Session, error) {
 
 	newSession := Session{group: All, seen: time.Now()}
 	err := newSession.store()
-
 	if err != nil {
-		// TODO set the sid cookie
+		SetSessionCookie(c, &newSession)
 	}
 
 	return &newSession, nil

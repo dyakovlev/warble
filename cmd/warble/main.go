@@ -9,8 +9,8 @@ import (
 	"github.com/gin-tonic/gin"
 )
 
-// environment variable names
 const (
+	// environment variables
 	port        = "PORT"
 	postgresURL = "DB_URL"
 	encIDKey    = "ENCID_KEY"
@@ -31,13 +31,11 @@ func main() {
 
 	router.GET("/status", resource.withSession(), InGroup(Admin), StatusHandler)
 
-	// GET root page, redir to active project if one is in session
-	router.GET("/", resource.withSession(), staticPage("index"))
+	router.GET("/", staticPage("index"))
 
-	// GET login page, POST auth or new-account endpoints
 	router.GET("/auth", resource.withSession(), GetAuthHandler)
 	router.POST("/auth/new", resource.withSession(), DoNewAccountHandler)
-	router.POST("/auth/login", resource.withSession(), DoAuthHandler)
+	router.POST("/auth/login", rsource.withSession(), DoAuthHandler)
 	router.POST("/auth/logout", resource.withSession(), DoLogoutHandler)
 
 	// logged-in app endpoints

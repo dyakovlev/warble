@@ -18,8 +18,9 @@ type Resource struct {
 
 func (r *Resource) withModel(name string, initializer Initializer) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		model, err := initializer(r, ctx.Request)
-		// todo handle err
+		model, err := initializer(r, ctx)
+
+		// TODO handle err
 
 		ctx.Set(name, model)
 		ctx.Next()
