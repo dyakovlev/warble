@@ -8,12 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Initializer func(db *Database, r *http.Request)
+type Initializer func(r *Resource, c *gin.Context)
 
 // container for initialized resource singletons
 type Resource struct {
-	db      *sql.DB    // db connection
-	crypter *IDCrypter // initialized id crypter (for public-facing IDs)
+	db      *sql.DB  // db connection
+	crypter *IDCodec // initialized id crypter (for public-facing IDs)
 }
 
 func (r *Resource) withModel(name string, initializer Initializer) gin.HandlerFunc {
@@ -43,7 +43,7 @@ func (r *Resource) withClip() gin.HandlerFunc {
 	return r.withModel("clip", InitClip)
 }
 
-func (r *Resource) loadRow(table string, id int) (res *sql.Row, err error) {
+func (r *Resource) loadRow(table string, id int) (*sql.Row, error) {
 	// TODO sanitize `table` param
 
 	res, err := r.db.QueryRow("SELECT * FROM ? WHERE id=?", table, id)
@@ -58,7 +58,7 @@ func (r *Resource) loadRow(table string, id int) (res *sql.Row, err error) {
 	return res, err
 }
 
-func (r *Resource) storeRow(table string, fields []string, params ...interface{}) (pkey int, err error) {
+func (r *Resource) storeRow(table string, fields []string, params ...interface{}) (int, error) {
 	// TODO sanitize params
 
 	pkey := params[0]

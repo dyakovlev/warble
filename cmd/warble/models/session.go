@@ -1,8 +1,9 @@
 package main
 
 import (
-	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // a Session model represents a logged-in session
@@ -57,7 +58,7 @@ func (s *Session) store() error {
 
 func (s *Session) expire() (err error) {
 	s.auth = false
-	_, err := s.store()
+	_, err = s.store()
 
 	if err != nil {
 		// TODO log session expiration error
@@ -67,7 +68,7 @@ func (s *Session) expire() (err error) {
 func (s *Session) authorize(uid int) (err error) {
 	s.auth = true
 	s.uid = id
-	_, err := s.store()
+	_, err = s.store()
 
 	if err != nil {
 		s.auth = false
@@ -78,10 +79,10 @@ func (s *Session) authorize(uid int) (err error) {
 func (s *Session) detach() (err error) {
 	s.auth = false
 	s.uid = nil
-	_, err := s.store()
+	_, err = s.store()
 }
 
 func (s *Session) updateSeen() (err error) {
 	s.seen = time.Now()
-	_, err := s.store()
+	_, err = s.store()
 }

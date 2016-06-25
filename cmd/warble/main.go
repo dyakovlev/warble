@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -22,10 +21,11 @@ func main() {
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
-	resource := Resource{
-		db:      sql.Open("postgres", os.Getenv(PostgresURL)),
-		crypter: NewIDCodec(os.Getenv(EncIDKey)),
-	}
+	resource := Resource{}
+	var err error
+
+	resource.db, err = sql.Open("postgres", os.Getenv(PostgresURL))
+	resource.crypter = NewIDCodec(os.Getenv(EncIDKey))
 
 	router.GET("/about", staticPage("about"))
 
@@ -58,7 +58,7 @@ func main() {
 	// TODO RunTLS for logged-in stuff
 }
 
-func XHRMiddleware(ctx *gin.Context) gin.HandlerFunc {
+func XHRMiddleware(ctx *gin.Context) {
 	ctx.Set("is_xhr", r.Header.Get("X-Requested-With") == "XMLHttpRequest")
 }
 

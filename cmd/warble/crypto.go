@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
-	"log"
+	"os"
 	"strconv"
 
 	"github.com/elithrar/simple-scrypt"
@@ -12,22 +12,22 @@ import (
 
 func encryptPass(rawPassword string) string {
 	hash, err := scrypt.GenerateFromPassword([]byte(rawPassword), scrypt.DefaultParams)
-	return hash
+	return string(hash)
 }
 
 func verifyPass(encPass string, rawCandidate string) bool {
-	err := scrypt.CompareHashAndPassword(encPass, []byte(rawCandidate))
+	err := scrypt.CompareHashAndPassword([]byte(encPass), []byte(rawCandidate))
 	return err == nil
 }
 
 // TODO generate this randomly per encryption, cc. https://gist.github.com/manishtpatel/8222606
-const commonIV = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}
+var commonIV = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}
 
 type IDCodec struct {
-	cipher aes.Cipher
+	cipher cipher.Block
 }
 
-func NewIDCodec(key []byte) IDCodec {
+func NewIDCodec(key string) *IDCodec {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		fmt.Printf("Error: NewCipher(%d bytes) = %s", len(key), err)
@@ -40,13 +40,14 @@ func NewIDCodec(key []byte) IDCodec {
 func (c *IDCodec) decid(ciphertext string) int {
 	decrypter := cipher.NewCFBDecrypter(c.cipher, commonIV)
 	plaintext := make([]byte, 4096) // TODO length?
-	decrypter.XORKeyStream(dec, plain)
-	return strconv.Atoi(dec)
+	decrypter.XORKeyStream([]byte(ciphertext), plaintext)
+	dec, err := strconv.Atoi(string(plaintext))
+	return dec
 }
 
 func (c *IDCodec) encid(plainId int) string {
 	encrypter := cipher.NewCFBEncrypter(c.cipher, commonIV)
 	ciphertext := make([]byte, 4096) // TODO length?
-	encrypter.XORKeyStream(ciphertext, strconv.Itoa(plainId))
-	return ciphertext
+	encrypter.XORKeyStream(ciphertext, []byte(strconv.Itoa(plainId)))
+	return string(ciphertext)
 }

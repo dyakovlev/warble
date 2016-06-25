@@ -7,38 +7,40 @@ import (
 )
 
 func GetAuthHandler(c *gin.Context) {
-	session := c.Get("session")
+	s, err := c.Get("session")
+	session, ok := s.(Session)
+
 	redir := c.DefaultQuery("redir", "/")
 
 	// se url param expires the session (clears session cookie)
 
-	if c.DefaultQuery("se", nil) != nil {
+	if c.DefaultQuery("se", "") != "" {
 		// TODO log
 		ExpireCookie(c, sessionCookie)
-		c.HTML(http.StatusOk, "auth", gin.H{
-			login:    false,
-			register: true,
-			email:    nil,
+		c.HTML(http.StatusOK, "auth", gin.H{
+			"login":    false,
+			"register": true,
+			"email":    nil,
 		})
 		return
 	}
 
 	// why would the user be logged in? handle this case anyway..
 
-	if session.auth {
+	if session.auth != false {
 		c.Redirect(http.StatusSeeOther, redir)
 		return
 	}
 
 	// inactive sessions (user logged out or session expired) get a log-back-in screen
 
-	if !session.auth && session.uid {
+	if session.auth == true && session.uid != nil {
 		user := User{resource: session.resource}
 		user.load(session.uid)
-		c.HTML(http.StatusOk, "auth", gin.H{
-			login:    true,
-			register: false,
-			email:    ObfuscateEmail(user.email),
+		c.HTML(http.StatusOK, "auth", gin.H{
+			"login":    true,
+			"register": false,
+			"email":    ObfuscateEmail(user.email),
 		})
 		return
 	}
@@ -46,15 +48,16 @@ func GetAuthHandler(c *gin.Context) {
 	// sessions without an associated uid don't have an account associated with them,
 	// so maybe they should make an account.
 
-	c.HTML(http.StatusOk, "register", gin.H{
-		login:    true,
-		register: true,
-		email:    nil,
+	c.HTML(http.StatusOK, "register", gin.H{
+		"login":    true,
+		"register": true,
+		"email":    nil,
 	})
 }
 
 func DoLogoutHandler(c *gin.Context) {
-	session := c.Get("session")
+	s, err := c.Get("session")
+	session, ok := s.(Session)
 
 	// TODO log
 
@@ -64,9 +67,8 @@ func DoLogoutHandler(c *gin.Context) {
 }
 
 func DoAuthHandler(c *gin.Context) {
-	session := c.Get("session")
-
-	var err error
+	s, err := c.Get("session")
+	session, ok := s.(Session)
 
 	user := User{resource: session.resource}
 
@@ -75,7 +77,7 @@ func DoAuthHandler(c *gin.Context) {
 	if session.uid != nil {
 		err = user.load(session.uid)
 	} else {
-		err = user.loadByEmail(email)
+		err = user.loadByEmail(c.PostForm("email"))
 	}
 
 	if err == NoSuchUser {
@@ -98,12 +100,13 @@ func DoAuthHandler(c *gin.Context) {
 		c.Redirect(http.StatusSeeOther, c.DefaultQuery("redir", "/"))
 	} else {
 		// TODO log password auth failure
-		c.Redirect(http.StatusOk, "/auth")
+		c.Redirect(http.StatusOK, "/auth")
 	}
 }
 
 func DoNewAccountHandler(c *gin.Context) {
-	session := c.Get("session")
+	s, err := c.Get("session")
+	session, ok := s.(Session)
 
 	email := c.PostForm("email")
 	pass := c.PostForm("password")

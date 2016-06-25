@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/http"
+	"github.com/gin-gonic/gin"
 )
 
 // a User model represents a person that can be logged in to the site
