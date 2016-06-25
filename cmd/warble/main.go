@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dyakovlev/warble/handlers"
-	"github.com/dyakovlev/warble/utils"
 	"github.com/gin-gonic/gin"
+
+	"warble/handlers"
+	"warble/utils"
 )
 
 // environment variables

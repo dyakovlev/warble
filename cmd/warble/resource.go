@@ -5,8 +5,9 @@ import (
 	_ "github.com/lib/pq"
 	"strings"
 
-	"github.com/dyakovlev/warble/models"
 	"github.com/gin-gonic/gin"
+
+	"warble/models"
 )
 
 type Initializer func(r *Resource, c *gin.Context)

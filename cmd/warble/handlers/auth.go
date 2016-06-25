@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/dyakovlev/warble/models"
-	"github.com/dyakovlev/warble/utils"
 	"github.com/gin-gonic/gin"
+
+	"warble/models"
+	"warble/utils"
 )
 
 func GetAuthHandler(c *gin.Context) {
@@ -37,7 +38,7 @@ func GetAuthHandler(c *gin.Context) {
 	// inactive sessions (user logged out or session expired) get a log-back-in screen
 
 	if session.auth == true && session.uid != nil {
-		user := models.User{resource: session.resource}
+		user := models.User{Res: session.Res}
 		user.load(session.uid)
 		c.HTML(http.StatusOK, "auth", gin.H{
 			"login":    true,
@@ -59,7 +60,7 @@ func GetAuthHandler(c *gin.Context) {
 
 func DoLogoutHandler(c *gin.Context) {
 	s, err := c.Get("session")
-	session, ok := s.(Session)
+	session, ok := s.(models.Session)
 
 	// TODO log
 
@@ -70,9 +71,9 @@ func DoLogoutHandler(c *gin.Context) {
 
 func DoAuthHandler(c *gin.Context) {
 	s, err := c.Get("session")
-	session, ok := s.(Session)
+	session, ok := s.(models.Session)
 
-	user := User{Res: session.Res}
+	user := models.User{Res: session.Res}
 
 	// if there's an associated user in the session, load by it
 
@@ -96,7 +97,7 @@ func DoAuthHandler(c *gin.Context) {
 
 	if utils.VerifyPass(user.Pass, c.PostForm("password")) {
 		err = session.Authorize(user.Id)
-		utils.SetSessionCookie(c, session.Res.crypter.Encid(session.Id))
+		utils.SetSessionCookie(c, session.Res.Crypter.Encid(session.Id))
 		// TODO add logged-in message to flash
 		// TODO log
 		// TODO maybe makes sense to redirect to last-associated-project in session?
@@ -109,7 +110,7 @@ func DoAuthHandler(c *gin.Context) {
 
 func DoNewAccountHandler(c *gin.Context) {
 	s, err := c.Get("session")
-	session, ok := s.(Session)
+	session, ok := s.(models.Session)
 
 	email := c.PostForm("email")
 	pass := c.PostForm("password")
@@ -126,7 +127,7 @@ func DoNewAccountHandler(c *gin.Context) {
 
 	session.Authorize(user.Id)
 
-	utils.SetSessionCookie(c, session.Res.crypter.Encid(session.Id))
+	utils.SetSessionCookie(c, session.Res.Crypter.Encid(session.Id))
 
 	c.Redirect(http.StatusSeeOther, "/profile")
 }

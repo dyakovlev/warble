@@ -23,7 +23,7 @@ type Session struct {
 func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 	if encSession, badCookie := GetSessionCookie(c); badCookie != nil {
 		s := Session{Res: r}
-		if noSession := s.Load(r.crypter.Decid(sid)); noSession != nil {
+		if noSession := s.Load(r.Crypter.Decid(sid)); noSession != nil {
 			s.UpdateSeen()
 			return &s, nil
 		}
@@ -38,13 +38,13 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 }
 
 func (s *Session) Load(id int) (err error) {
-	if row, err := s.resource.LoadRow("session", id); err != nil {
+	if row, err := s.Res.LoadRow("session", id); err != nil {
 		err = row.Scan(&s.Id, &s.Auth, &s.Grp, &s.Seen, &s.Uid, &s.Pid)
 	}
 }
 
 func (s *Session) Store() error {
-	s.resource.StoreRow(
+	s.Res.StoreRow(
 		"session",
 		[]string{"id", "auth", "group", "seen", "uid", "pid"},
 		&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid,

@@ -19,10 +19,10 @@ func InitUser(res *Resource, c *gin.Context) (*User, error) {
 
 }
 
-func (u *User) load(id int) (err error) {
+func (u *User) Load(id int) (err error) {
 
 }
 
-func (u *User) store() error {
+func (u *User) Store() error {
 
 }
