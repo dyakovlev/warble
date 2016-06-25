@@ -17,14 +17,14 @@ type Clip struct {
 	Res *Resource // ref to initialized resources
 }
 
-func InitClip(r *Resource, c *gin.Context) (c *Clip, err error) {
-
+func InitClip(r *Resource, c *gin.Context) (clip *Clip, err error) {
+	return &Clip{}, nil
 }
 
 func (c *Clip) load(id int) (err error) {
-
+	return nil
 }
 
 func (m *Clip) store() (id int, err error) {
-
+	return 0, nil
 }

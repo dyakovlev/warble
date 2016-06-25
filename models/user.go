@@ -15,14 +15,14 @@ type User struct {
 	Res *Resource // ref to initialized resources
 }
 
-func InitUser(res *Resource, c *gin.Context) (*User, error) {
-
+func InitUser(res *Resource, c *gin.Context) (user *User, err error) {
+	return &User{}, nil
 }
 
 func (u *User) Load(id int) (err error) {
-
+	return nil
 }
 
 func (u *User) Store() error {
-
+	return nil
 }

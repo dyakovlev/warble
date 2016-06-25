@@ -19,12 +19,13 @@ type Project struct {
 }
 
 func InitProject(r *Resource, c *gin.Context) (project *Project, err error) {
-
+	return &Project{}, nil
 }
 
 func (p *Project) load(id int) (err error) {
-
+	return nil
 }
 
-func (p *Project) store() (id int) {
+func (p *Project) store() (id int, err error) {
+	return 0, nil
 }

@@ -27,31 +27,30 @@ func main() {
 
 	r, err := models.NewResource(os.Getenv(PostgresURL), os.Getenv(EncIDKey))
 
-	router.GET("/about", staticPage("about"))
-
-	router.GET("/status", r.WithSession(), InGroup(Admin), handlers.StatusHandler)
-
 	router.GET("/", staticPage("index"))
 
-	router.GET("/auth", r.WithSession(), handlers.GetAuthHandler)
-	router.POST("/auth/new", r.WithSession(), handlers.DoNewAccountHandler)
-	router.POST("/auth/login", r.WithSession(), handlers.DoAuthHandler)
-	router.POST("/auth/logout", r.WithSession(), handlers.DoLogoutHandler)
+	router.GET("/about", staticPage("about"))
 
-	// logged-in app endpoints
-	app := router.Group("/", r.WithSession(), InGroup(User))
+	router.GET("/status", SessionMiddleware(r), InGroup(Admin), handlers.StatusHandler)
+
+	auth := router.Group("/auth", SessionMiddleware(r))
 	{
-		// modify user profile
-		router.GET("/user", r.WithUser(), handlers.GetUserHandler)
-		router.POST("/user", r.WithUser(), handlers.SaveUserHandler)
+		router.GET("/auth", handlers.GetAuthHandler)
+		router.POST("/auth/new", handlers.DoNewAccountHandler)
+		router.POST("/auth/login", handlers.DoAuthHandler)
+		router.POST("/auth/logout", handlers.DoLogoutHandler)
+	}
 
-		// modify project
-		router.GET("/project", r.WithProject(), handlers.GetProjectHandler)
-		router.POST("/project", r.WithProject(), handlers.SaveProjectHandler)
+	app := router.Group("/", SessionMiddleware(r), InGroup(User))
+	{
+		router.GET("/user", handlers.GetUserHandler)
+		router.POST("/user", handlers.SaveUserHandler)
 
-		// modify clip audio file
-		router.GET("/clip", r.WithClip(), handlers.GetClipHandler)
-		router.POST("/clip", r.WithClip(), handlers.SaveClipHandler)
+		router.GET("/project", handlers.GetProjectHandler)
+		router.POST("/project", handlers.SaveProjectHandler)
+
+		router.GET("/clip", handlers.GetClipHandler)
+		router.POST("/clip", handlers.SaveClipHandler)
 	}
 
 	router.Run(":" + os.Getenv(Port))
@@ -60,6 +59,16 @@ func main() {
 
 func XHRMiddleware(ctx *gin.Context) {
 	ctx.Set("is_xhr", r.Header.Get("X-Requested-With") == "XMLHttpRequest")
+}
+
+func SessionMiddleware(r *models.Resource) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		s, err := models.InitSession(r, ctx)
+
+		// TODO handle err
+
+		ctx.Set("session", s)
+	}
 }
 
 func staticPage(page string) gin.HandlerFunc {

@@ -11,7 +11,7 @@ import (
 )
 
 func EncryptPass(rawPassword string) string {
-	hash, err := scrypt.GenerateFromPassword([]byte(rawPassword), scrypt.DefaultParams)
+	hash, _ := scrypt.GenerateFromPassword([]byte(rawPassword), scrypt.DefaultParams)
 	return string(hash)
 }
 
@@ -41,7 +41,7 @@ func (c *IDCodec) Decid(ciphertext string) int {
 	decrypter := cipher.NewCFBDecrypter(c.cipher, commonIV)
 	plaintext := make([]byte, 4096) // TODO length?
 	decrypter.XORKeyStream([]byte(ciphertext), plaintext)
-	dec, err := strconv.Atoi(string(plaintext))
+	dec, _ := strconv.Atoi(string(plaintext))
 	return dec
 }
 

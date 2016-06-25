@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/dyakovlev/warble/utils"
 )
 
 // a Session model represents a logged-in session
@@ -21,63 +23,69 @@ type Session struct {
 }
 
 func InitSession(r *Resource, c *gin.Context) (*Session, error) {
-	if encSession, badCookie := GetSessionCookie(c); badCookie != nil {
-		s := Session{Res: r}
-		if noSession := s.Load(r.Decid(sid)); noSession != nil {
-			s.UpdateSeen()
-			return &s, nil
-		}
+	s := Session{Res: r}
+	if noSession := s.Load(r.Decid(utils.GetSessionCookie(c))); noSession != nil {
+		s.UpdateSeen()
+		return &s, nil
 	}
 
-	if badCookie || noSession {
-		// TODO log
-	}
+	// TODO handle errors
 
-	newSession := Session{Auth: false, Group: All, Seen: time.Now()}
+	newSession := Session{Auth: false, Seen: time.Now()}
 	return &newSession, nil
 }
 
 func (s *Session) Load(id int) (err error) {
-	if row, err := s.Res.LoadRow("session", id); err != nil {
-		err = row.Scan(&s.Id, &s.Auth, &s.Grp, &s.Seen, &s.Uid, &s.Pid)
+	row := s.Res.LoadRow("session", id)
+	err = row.Scan(&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid)
+
+	if err != nil {
+		// handle norows error
 	}
+
+	return err
 }
 
 func (s *Session) Store() error {
-	s.Res.StoreRow(
+	_, err := s.Res.StoreRow(
 		"session",
 		[]string{"id", "auth", "group", "seen", "uid", "pid"},
 		&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid,
 	)
+	return err
 }
 
 func (s *Session) Expire() (err error) {
 	s.Auth = false
-	_, err = s.Store()
+	err = s.Store()
 
 	if err != nil {
 		// TODO log session expiration error
 	}
+
+	return err
 }
 
-func (s *Session) Authorize(uid int) (err error) {
+func (s *Session) Authorize(uid int) error {
 	s.Auth = true
-	s.Uid = id
-	_, err = s.Store()
+	s.Uid = uid
+	err := s.Store()
 
 	if err != nil {
 		s.Auth = false
-		s.Uid = nil
+		s.Uid = -1
 	}
+
+	return err
 }
 
-func (s *Session) Detach() (err error) {
+func (s *Session) Detach() error {
 	s.Auth = false
-	s.Uid = nil
-	_, err = s.Store()
+	s.Uid = -1
+	return s.Store()
 }
 
-func (s *Session) UpdateSeen() (err error) {
-	s.seen = time.Now()
-	_, err = s.Store()
+func (s *Session) UpdateSeen() error {
+	s.Seen = time.Now()
+	return s.Store()
 }
