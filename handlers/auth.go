@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"warble/models"
-	"warble/utils"
+	"github.com/dyakovlev/warble/models"
+	"github.com/dyakovlev/warble/utils"
 )
 
 func GetAuthHandler(c *gin.Context) {

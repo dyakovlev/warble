@@ -1,7 +1,6 @@
 package models
 
 import (
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"

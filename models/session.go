@@ -23,7 +23,7 @@ type Session struct {
 func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 	if encSession, badCookie := GetSessionCookie(c); badCookie != nil {
 		s := Session{Res: r}
-		if noSession := s.Load(r.Crypter.Decid(sid)); noSession != nil {
+		if noSession := s.Load(r.Decid(sid)); noSession != nil {
 			s.UpdateSeen()
 			return &s, nil
 		}

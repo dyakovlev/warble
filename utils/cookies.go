@@ -17,7 +17,7 @@ func ExpireCookie(c *gin.Context, name string) {
 }
 
 func ExpireSessionCookie(c *gin.Context) {
-	expireCookie(c, sessionCookie)
+	ExpireCookie(c, sessionCookie)
 }
 
 func SetCookie(c *gin.Context, name string, value string, expiration time.Time, secure bool) {

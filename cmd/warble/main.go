@@ -7,8 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"warble/handlers"
-	"warble/utils"
+	"github.com/dyakovlev/warble/handlers"
+	"github.com/dyakovlev/warble/models"
+	"github.com/dyakovlev/warble/utils"
 )
 
 // environment variables
@@ -24,37 +25,33 @@ func main() {
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
-	resource := Resource{}
-	var err error
-
-	resource.db, err = sql.Open("postgres", os.Getenv(PostgresURL))
-	resource.crypter = utils.NewIDCodec(os.Getenv(EncIDKey))
+	r, err := models.NewResource(os.Getenv(PostgresURL), os.Getenv(EncIDKey))
 
 	router.GET("/about", staticPage("about"))
 
-	router.GET("/status", resource.withSession(), InGroup(Admin), handlers.StatusHandler)
+	router.GET("/status", r.WithSession(), InGroup(Admin), handlers.StatusHandler)
 
 	router.GET("/", staticPage("index"))
 
-	router.GET("/auth", resource.withSession(), handlers.GetAuthHandler)
-	router.POST("/auth/new", resource.withSession(), handlers.DoNewAccountHandler)
-	router.POST("/auth/login", resource.withSession(), handlers.DoAuthHandler)
-	router.POST("/auth/logout", resource.withSession(), handlers.DoLogoutHandler)
+	router.GET("/auth", r.WithSession(), handlers.GetAuthHandler)
+	router.POST("/auth/new", r.WithSession(), handlers.DoNewAccountHandler)
+	router.POST("/auth/login", r.WithSession(), handlers.DoAuthHandler)
+	router.POST("/auth/logout", r.WithSession(), handlers.DoLogoutHandler)
 
 	// logged-in app endpoints
-	app := router.Group("/", resource.withSession(), InGroup(User))
+	app := router.Group("/", r.WithSession(), InGroup(User))
 	{
 		// modify user profile
-		router.GET("/user", resource.withUser(), handlers.GetUserHandler)
-		router.POST("/user", resource.withUser(), handlers.SaveUserHandler)
+		router.GET("/user", r.WithUser(), handlers.GetUserHandler)
+		router.POST("/user", r.WithUser(), handlers.SaveUserHandler)
 
 		// modify project
-		router.GET("/project", resource.withProject(), handlers.GetProjectHandler)
-		router.POST("/project", resource.withProject(), handlers.SaveProjectHandler)
+		router.GET("/project", r.WithProject(), handlers.GetProjectHandler)
+		router.POST("/project", r.WithProject(), handlers.SaveProjectHandler)
 
 		// modify clip audio file
-		router.GET("/clip", resource.withClip(), handlers.GetClipHandler)
-		router.POST("/clip", resource.withClip(), handlers.SaveClipHandler)
+		router.GET("/clip", r.WithClip(), handlers.GetClipHandler)
+		router.POST("/clip", r.WithClip(), handlers.SaveClipHandler)
 	}
 
 	router.Run(":" + os.Getenv(Port))
@@ -74,9 +71,10 @@ func staticPage(page string) gin.HandlerFunc {
 func InGroup(minGroup Group) gin.HandlerFunc {
 	return func(ctx *Context) {
 		s := ctx.MustGet("session")
+		session, ok := s.(models.Session)
 
 		// only All is allowed to be unauthenticated
-		if !s.auth && minGroup < All {
+		if !s.Auth && minGroup < All {
 			if ctx.Get("is_xhr") {
 				InternalError(ctx, NOT_LOGGED_IN, http.StatusForbidden)
 			} else {
@@ -87,7 +85,7 @@ func InGroup(minGroup Group) gin.HandlerFunc {
 			return
 		}
 
-		if minGroup < s.group {
+		if minGroup < s.Group {
 			InternalError(ctx, INSUFFICIENT_PRIVS, http.StatusForbidden)
 			ctx.Abort()
 			return

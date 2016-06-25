@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"database/sql"
@@ -7,15 +7,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"warble/models"
+	"github.com/dyakovlev/warble/utils"
 )
 
 type Initializer func(r *Resource, c *gin.Context)
 
 // container for initialized resource singletons
 type Resource struct {
-	db      *sql.DB  // db connection
-	crypter *IDCodec // initialized id crypter (for public-facing IDs)
+	db      *sql.DB        // db connection
+	crypter *utils.IDCodec // initialized id crypter (for public-facing IDs)
+}
+
+func NewResource(dbAddress string, crypterKey string) (*Resource, err) {
+	r := Resource{}
+
+	r.db, err = sql.Open("postgres", dbAddress)
+	r.crypter = utils.NewIDCodec(crypterKey)
+
+	return &r, err
 }
 
 func (r *Resource) withModel(name string, initializer Initializer) gin.HandlerFunc {
@@ -29,20 +38,28 @@ func (r *Resource) withModel(name string, initializer Initializer) gin.HandlerFu
 	}
 }
 
-func (r *Resource) withSession() gin.HandlerFunc {
-	return r.withModel("session", models.InitSession)
+func (r *Resource) WithSession() gin.HandlerFunc {
+	return r.withModel("session", InitSession)
 }
 
-func (r *Resource) withUser() gin.HandlerFunc {
-	return r.withModel("user", models.InitUser)
+func (r *Resource) WithUser() gin.HandlerFunc {
+	return r.withModel("user", InitUser)
 }
 
-func (r *Resource) withProject() gin.HandlerFunc {
-	return r.withModel("project", models.InitProject)
+func (r *Resource) WithProject() gin.HandlerFunc {
+	return r.withModel("project", InitProject)
 }
 
-func (r *Resource) withClip() gin.HandlerFunc {
-	return r.withModel("clip", models.InitClip)
+func (r *Resource) WithClip() gin.HandlerFunc {
+	return r.withModel("clip", InitClip)
+}
+
+func (r *Resource) Encid(plain int) string {
+	return r.crypter.Encid(plain)
+}
+
+func (r *Resource) Decid(enc string) int {
+	return r.crypter.Decid(enc)
 }
 
 func (r *Resource) LoadRow(table string, id int) (*sql.Row, error) {
