@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"time"
@@ -35,21 +35,21 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 
 	newSession := Session{group: All, seen: time.Now()}
 	err := newSession.store()
-	if err != nil {
-		SetSessionCookie(c, &newSession)
-	}
+
+	// set session cookie
+	SetSessionCookie(c, r.crypter.Encid(newSession.id))
 
 	return &newSession, nil
 }
 
 func (s *Session) load(id int) (err error) {
-	if row, err := s.resource.loadRow("session", id); err != nil {
+	if row, err := s.resource.LoadRow("session", id); err != nil {
 		err = row.Scan(&s.id, &s.auth, &s.grp, &s.seen, &s.uid, &s.pid)
 	}
 }
 
 func (s *Session) store() error {
-	s.resource.storeRow(
+	s.resource.StoreRow(
 		"session",
 		[]string{"id", "auth", "grp", "seen", "uid", "pid"},
 		&s.id, &s.auth, &s.grp, &s.seen, &s.uid, &s.pid,

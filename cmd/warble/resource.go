@@ -5,6 +5,7 @@ import (
 	_ "github.com/lib/pq"
 	"strings"
 
+	"github.com/dyakovlev/warble/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,22 +29,22 @@ func (r *Resource) withModel(name string, initializer Initializer) gin.HandlerFu
 }
 
 func (r *Resource) withSession() gin.HandlerFunc {
-	return r.withModel("session", InitSession)
+	return r.withModel("session", models.InitSession)
 }
 
 func (r *Resource) withUser() gin.HandlerFunc {
-	return r.withModel("user", InitUser)
+	return r.withModel("user", models.InitUser)
 }
 
 func (r *Resource) withProject() gin.HandlerFunc {
-	return r.withModel("project", InitProject)
+	return r.withModel("project", models.InitProject)
 }
 
 func (r *Resource) withClip() gin.HandlerFunc {
-	return r.withModel("clip", InitClip)
+	return r.withModel("clip", models.InitClip)
 }
 
-func (r *Resource) loadRow(table string, id int) (*sql.Row, error) {
+func (r *Resource) LoadRow(table string, id int) (*sql.Row, error) {
 	// TODO sanitize `table` param
 
 	res, err := r.db.QueryRow("SELECT * FROM ? WHERE id=?", table, id)
@@ -58,7 +59,7 @@ func (r *Resource) loadRow(table string, id int) (*sql.Row, error) {
 	return res, err
 }
 
-func (r *Resource) storeRow(table string, fields []string, params ...interface{}) (int, error) {
+func (r *Resource) StoreRow(table string, fields []string, params ...interface{}) (int, error) {
 	// TODO sanitize params
 
 	pkey := params[0]

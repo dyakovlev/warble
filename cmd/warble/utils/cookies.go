@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"net/http"
@@ -16,6 +16,10 @@ func ExpireCookie(c *gin.Context, name string) {
 	SetCookie(c, name, "", time.Now(), false)
 }
 
+func ExpireSessionCookie(c *gin.Context) {
+	expireCookie(c, sessionCookie)
+}
+
 func SetCookie(c *gin.Context, name string, value string, expiration time.Time, secure bool) {
 	cookie := http.Cookie{
 		Name:       name,
@@ -29,8 +33,7 @@ func SetCookie(c *gin.Context, name string, value string, expiration time.Time, 
 	http.SetCookie(c.Writer, &cookie)
 }
 
-func SetSessionCookie(c *gin.Context, s *Session) {
-	encSid := s.res.crypter.encid(s.id)
+func SetSessionCookie(c *gin.Context, encSid string) {
 	exp := time.Now().AddDate(0, 1, 0) // 1 month (TODO extend session length automatically?)
 	SetCookie(c, sessionCookie, encSid, exp, true)
 }

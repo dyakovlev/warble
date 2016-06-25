@@ -1,14 +1,16 @@
-package main
+package handlers
 
 import (
 	"net/http"
 
+	"github.com/dyakovlev/warble/models"
+	"github.com/dyakovlev/warble/utils"
 	"github.com/gin-gonic/gin"
 )
 
 func GetAuthHandler(c *gin.Context) {
 	s, err := c.Get("session")
-	session, ok := s.(Session)
+	session, ok := s.(models.Session)
 
 	redir := c.DefaultQuery("redir", "/")
 
@@ -16,7 +18,7 @@ func GetAuthHandler(c *gin.Context) {
 
 	if c.DefaultQuery("se", "") != "" {
 		// TODO log
-		ExpireCookie(c, sessionCookie)
+		utils.ExpireSessionCookie(c)
 		c.HTML(http.StatusOK, "auth", gin.H{
 			"login":    false,
 			"register": true,
@@ -35,12 +37,12 @@ func GetAuthHandler(c *gin.Context) {
 	// inactive sessions (user logged out or session expired) get a log-back-in screen
 
 	if session.auth == true && session.uid != nil {
-		user := User{resource: session.resource}
+		user := models.User{resource: session.resource}
 		user.load(session.uid)
 		c.HTML(http.StatusOK, "auth", gin.H{
 			"login":    true,
 			"register": false,
-			"email":    ObfuscateEmail(user.email),
+			"email":    utils.ObfuscateEmail(user.email),
 		})
 		return
 	}
@@ -123,6 +125,7 @@ func DoNewAccountHandler(c *gin.Context) {
 
 	session.authorize(user.id)
 
+	encSid := s.res.crypter.encid(s.id)
 	// TODO add success message to flash
 
 	c.Redirect(http.StatusSeeOther, "/profile")

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/dyakovlev/warble/handlers"
+	"github.com/dyakovlev/warble/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,33 +27,33 @@ func main() {
 	var err error
 
 	resource.db, err = sql.Open("postgres", os.Getenv(PostgresURL))
-	resource.crypter = NewIDCodec(os.Getenv(EncIDKey))
+	resource.crypter = utils.NewIDCodec(os.Getenv(EncIDKey))
 
 	router.GET("/about", staticPage("about"))
 
-	router.GET("/status", resource.withSession(), InGroup(Admin), StatusHandler)
+	router.GET("/status", resource.withSession(), InGroup(Admin), handlers.StatusHandler)
 
 	router.GET("/", staticPage("index"))
 
-	router.GET("/auth", resource.withSession(), GetAuthHandler)
-	router.POST("/auth/new", resource.withSession(), DoNewAccountHandler)
-	router.POST("/auth/login", resource.withSession(), DoAuthHandler)
-	router.POST("/auth/logout", resource.withSession(), DoLogoutHandler)
+	router.GET("/auth", resource.withSession(), handlers.GetAuthHandler)
+	router.POST("/auth/new", resource.withSession(), handlers.DoNewAccountHandler)
+	router.POST("/auth/login", resource.withSession(), handlers.DoAuthHandler)
+	router.POST("/auth/logout", resource.withSession(), handlers.DoLogoutHandler)
 
 	// logged-in app endpoints
 	app := router.Group("/", resource.withSession(), InGroup(User))
 	{
 		// modify user profile
-		router.GET("/user", resource.withUser(), GetUserHandler)
-		router.POST("/user", resource.withUser(), SaveUserHandler)
+		router.GET("/user", resource.withUser(), handlers.GetUserHandler)
+		router.POST("/user", resource.withUser(), handlers.SaveUserHandler)
 
 		// modify project
-		router.GET("/project", resource.withProject(), GetProjectHandler)
-		router.POST("/project", resource.withProject(), SaveProjectHandler)
+		router.GET("/project", resource.withProject(), handlers.GetProjectHandler)
+		router.POST("/project", resource.withProject(), handlers.SaveProjectHandler)
 
 		// modify clip audio file
-		router.GET("/clip", resource.withClip(), GetClipHandler)
-		router.POST("/clip", resource.withClip(), SaveClipHandler)
+		router.GET("/clip", resource.withClip(), handlers.GetClipHandler)
+		router.POST("/clip", resource.withClip(), handlers.SaveClipHandler)
 	}
 
 	router.Run(":" + os.Getenv(Port))

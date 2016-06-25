@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"crypto/aes"
@@ -10,12 +10,12 @@ import (
 	"github.com/elithrar/simple-scrypt"
 )
 
-func encryptPass(rawPassword string) string {
+func EncryptPass(rawPassword string) string {
 	hash, err := scrypt.GenerateFromPassword([]byte(rawPassword), scrypt.DefaultParams)
 	return string(hash)
 }
 
-func verifyPass(encPass string, rawCandidate string) bool {
+func VerifyPass(encPass string, rawCandidate string) bool {
 	err := scrypt.CompareHashAndPassword([]byte(encPass), []byte(rawCandidate))
 	return err == nil
 }
@@ -37,7 +37,7 @@ func NewIDCodec(key string) *IDCodec {
 	return &IDCodec{c}
 }
 
-func (c *IDCodec) decid(ciphertext string) int {
+func (c *IDCodec) Decid(ciphertext string) int {
 	decrypter := cipher.NewCFBDecrypter(c.cipher, commonIV)
 	plaintext := make([]byte, 4096) // TODO length?
 	decrypter.XORKeyStream([]byte(ciphertext), plaintext)
@@ -45,7 +45,7 @@ func (c *IDCodec) decid(ciphertext string) int {
 	return dec
 }
 
-func (c *IDCodec) encid(plainId int) string {
+func (c *IDCodec) Encid(plainId int) string {
 	encrypter := cipher.NewCFBEncrypter(c.cipher, commonIV)
 	ciphertext := make([]byte, 4096) // TODO length?
 	encrypter.XORKeyStream(ciphertext, []byte(strconv.Itoa(plainId)))

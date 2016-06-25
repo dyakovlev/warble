@@ -1,8 +1,10 @@
-package main
+package models
 
 import (
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // a Project model represents a project configuration (where a project is a song)
@@ -17,7 +19,7 @@ type Project struct {
 	resource *Resource // ref to initialized resources
 }
 
-func InitProject(res *Resource, req *http.Request) (project *Project, err error) {
+func InitProject(r *Resource, c *gin.Context) (project *Project, err error) {
 
 }
 

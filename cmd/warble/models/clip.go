@@ -1,8 +1,10 @@
-package main
+package models
 
 import (
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // a Clip model represents some clip metadata (raw clips are stored in S3)
@@ -16,7 +18,7 @@ type Clip struct {
 	resource *Resource // ref to initialized resources
 }
 
-func InitClip(res *Resource, req *http.Request) (c *Clip, err error) {
+func InitClip(r *Resource, c *gin.Context) (c *Clip, err error) {
 
 }
 
