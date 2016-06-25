@@ -29,7 +29,7 @@ func GetAuthHandler(c *gin.Context) {
 
 	// why would the user be logged in? handle this case anyway..
 
-	if session.auth != false {
+	if session.Auth != false {
 		c.Redirect(http.StatusSeeOther, redir)
 		return
 	}
@@ -63,7 +63,7 @@ func DoLogoutHandler(c *gin.Context) {
 
 	// TODO log
 
-	session.expire()
+	session.Expire()
 
 	c.Redirect(http.StatusSeeOther, "/")
 }
@@ -72,30 +72,31 @@ func DoAuthHandler(c *gin.Context) {
 	s, err := c.Get("session")
 	session, ok := s.(Session)
 
-	user := User{resource: session.resource}
+	user := User{Res: session.Res}
 
 	// if there's an associated user in the session, load by it
 
-	if session.uid != nil {
-		err = user.load(session.uid)
+	if session.Uid != nil {
+		err = user.Load(session.Uid)
 	} else {
-		err = user.loadByEmail(c.PostForm("email"))
+		err = user.LoadByEmail(c.PostForm("email"))
 	}
 
-	if err == NoSuchUser {
+	if err != nil {
 		// TODO log
 		// TODO add no-user message to flash
 		c.Redirect(http.StatusSeeOther, "/auth")
 	}
 
-	if user.email != c.PostForm("email") {
+	if user.Email != c.PostForm("email") {
 		// TODO log
 		// TODO add message
-		session.detach()
+		session.Detach()
 	}
 
-	if verifyPass(user.pass, c.PostForm("password")) {
-		err = session.authorize(user.id)
+	if utils.VerifyPass(user.Pass, c.PostForm("password")) {
+		err = session.Authorize(user.Id)
+		utils.SetSessionCookie(c, session.Res.crypter.Encid(session.Id))
 		// TODO add logged-in message to flash
 		// TODO log
 		// TODO maybe makes sense to redirect to last-associated-project in session?
@@ -115,18 +116,17 @@ func DoNewAccountHandler(c *gin.Context) {
 
 	// TODO validate email, pass
 
-	user := User{
-		email:    email,
-		pass:     encryptPass(pass),
-		resource: session.res,
+	user := models.User{
+		Email: email,
+		Pass:  utils.EncryptPass(pass),
+		Res:   session.Res,
 	}
 
-	user.store()
+	user.Store()
 
-	session.authorize(user.id)
+	session.Authorize(user.Id)
 
-	encSid := s.res.crypter.encid(s.id)
-	// TODO add success message to flash
+	utils.SetSessionCookie(c, session.Res.crypter.Encid(session.Id))
 
 	c.Redirect(http.StatusSeeOther, "/profile")
 }

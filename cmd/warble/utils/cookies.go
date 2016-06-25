@@ -33,6 +33,11 @@ func SetCookie(c *gin.Context, name string, value string, expiration time.Time, 
 	http.SetCookie(c.Writer, &cookie)
 }
 
+func GetSessionCookie(c *gin.Context) string {
+	s, err := c.Cookie(sessionCookie)
+	return s
+}
+
 func SetSessionCookie(c *gin.Context, encSid string) {
 	exp := time.Now().AddDate(0, 1, 0) // 1 month (TODO extend session length automatically?)
 	SetCookie(c, sessionCookie, encSid, exp, true)

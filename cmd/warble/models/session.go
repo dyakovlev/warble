@@ -9,22 +9,22 @@ import (
 // a Session model represents a logged-in session
 type Session struct {
 	// in schema
-	id   int       // session id (primary key)
-	auth bool      // has the user logged in
-	grp  int       // what group does the logged-in user belong to
-	seen time.Time // last seen
-	uid  int       // associated user (if authenticated)
-	pid  int       // associated project (last one worked on, for convenience)
+	Id    int       // session id (primary key)
+	Auth  bool      // has the user logged in
+	Group int       // what group does the logged-in user belong to
+	Seen  time.Time // last seen
+	Uid   int       // associated user (if authenticated)
+	Pid   int       // associated project (last one worked on, for convenience)
 
 	// not in schema
-	resource *Resource // ref to initialized resources
+	Res *Resource // ref to initialized resources
 }
 
 func InitSession(r *Resource, c *gin.Context) (*Session, error) {
-	if encSession, badCookie := c.Cookie(sessionCookie); badCookie != nil {
-		s := Session{resource: r}
-		if noSession := s.load(r.crypter.decid(sid)); noSession != nil {
-			s.updateSeen()
+	if encSession, badCookie := GetSessionCookie(c); badCookie != nil {
+		s := Session{Res: r}
+		if noSession := s.Load(r.crypter.Decid(sid)); noSession != nil {
+			s.UpdateSeen()
 			return &s, nil
 		}
 	}
@@ -33,56 +33,51 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 		// TODO log
 	}
 
-	newSession := Session{group: All, seen: time.Now()}
-	err := newSession.store()
-
-	// set session cookie
-	SetSessionCookie(c, r.crypter.Encid(newSession.id))
-
+	newSession := Session{Auth: false, Group: All, Seen: time.Now()}
 	return &newSession, nil
 }
 
-func (s *Session) load(id int) (err error) {
+func (s *Session) Load(id int) (err error) {
 	if row, err := s.resource.LoadRow("session", id); err != nil {
-		err = row.Scan(&s.id, &s.auth, &s.grp, &s.seen, &s.uid, &s.pid)
+		err = row.Scan(&s.Id, &s.Auth, &s.Grp, &s.Seen, &s.Uid, &s.Pid)
 	}
 }
 
-func (s *Session) store() error {
+func (s *Session) Store() error {
 	s.resource.StoreRow(
 		"session",
-		[]string{"id", "auth", "grp", "seen", "uid", "pid"},
-		&s.id, &s.auth, &s.grp, &s.seen, &s.uid, &s.pid,
+		[]string{"id", "auth", "group", "seen", "uid", "pid"},
+		&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid,
 	)
 }
 
-func (s *Session) expire() (err error) {
-	s.auth = false
-	_, err = s.store()
+func (s *Session) Expire() (err error) {
+	s.Auth = false
+	_, err = s.Store()
 
 	if err != nil {
 		// TODO log session expiration error
 	}
 }
 
-func (s *Session) authorize(uid int) (err error) {
-	s.auth = true
-	s.uid = id
-	_, err = s.store()
+func (s *Session) Authorize(uid int) (err error) {
+	s.Auth = true
+	s.Uid = id
+	_, err = s.Store()
 
 	if err != nil {
-		s.auth = false
-		s.uid = nil
+		s.Auth = false
+		s.Uid = nil
 	}
 }
 
-func (s *Session) detach() (err error) {
-	s.auth = false
-	s.uid = nil
-	_, err = s.store()
+func (s *Session) Detach() (err error) {
+	s.Auth = false
+	s.Uid = nil
+	_, err = s.Store()
 }
 
-func (s *Session) updateSeen() (err error) {
+func (s *Session) UpdateSeen() (err error) {
 	s.seen = time.Now()
-	_, err = s.store()
+	_, err = s.Store()
 }
