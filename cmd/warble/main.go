@@ -35,7 +35,7 @@ func main() {
 
 	router.GET("/auth", resource.withSession(), GetAuthHandler)
 	router.POST("/auth/new", resource.withSession(), DoNewAccountHandler)
-	router.POST("/auth/login", rsource.withSession(), DoAuthHandler)
+	router.POST("/auth/login", resource.withSession(), DoAuthHandler)
 	router.POST("/auth/logout", resource.withSession(), DoLogoutHandler)
 
 	// logged-in app endpoints
