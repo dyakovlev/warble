@@ -10,8 +10,8 @@ import (
 )
 
 func GetAuthHandler(c *gin.Context) {
-	s, err := c.Get("session")
-	session, ok := s.(models.Session)
+	s, _ := c.Get("session")
+	session, _ := s.(models.Session)
 
 	redir := c.DefaultQuery("redir", "/")
 
@@ -37,13 +37,13 @@ func GetAuthHandler(c *gin.Context) {
 
 	// inactive sessions (user logged out or session expired) get a log-back-in screen
 
-	if session.auth == true && session.uid != nil {
+	if session.Auth == true && session.Uid != 0 {
 		user := models.User{Res: session.Res}
-		user.load(session.uid)
+		user.Load(session.Uid)
 		c.HTML(http.StatusOK, "auth", gin.H{
 			"login":    true,
 			"register": false,
-			"email":    utils.ObfuscateEmail(user.email),
+			"email":    utils.ObfuscateEmail(user.Email),
 		})
 		return
 	}
@@ -59,10 +59,12 @@ func GetAuthHandler(c *gin.Context) {
 }
 
 func DoLogoutHandler(c *gin.Context) {
-	s, err := c.Get("session")
-	session, ok := s.(models.Session)
+	s, _ := c.Get("session")
+	session, _ := s.(models.Session)
 
 	// TODO log
+
+	// TODO flash message
 
 	session.Expire()
 
@@ -70,14 +72,13 @@ func DoLogoutHandler(c *gin.Context) {
 }
 
 func DoAuthHandler(c *gin.Context) {
-	s, err := c.Get("session")
-	session, ok := s.(models.Session)
+	s, _ := c.Get("session")
+	session, _ := s.(models.Session)
 
+	var err error
 	user := models.User{Res: session.Res}
 
-	// if there's an associated user in the session, load by it
-
-	if session.Uid != nil {
+	if session.Uid != 0 {
 		err = user.Load(session.Uid)
 	} else {
 		err = user.LoadByEmail(c.PostForm("email"))
@@ -97,7 +98,7 @@ func DoAuthHandler(c *gin.Context) {
 
 	if utils.VerifyPass(user.Pass, c.PostForm("password")) {
 		err = session.Authorize(user.Id)
-		utils.SetSessionCookie(c, session.Res.Crypter.Encid(session.Id))
+		utils.SetSessionCookie(c, session.Res.Encid(session.Id))
 		// TODO add logged-in message to flash
 		// TODO log
 		// TODO maybe makes sense to redirect to last-associated-project in session?
@@ -109,8 +110,8 @@ func DoAuthHandler(c *gin.Context) {
 }
 
 func DoNewAccountHandler(c *gin.Context) {
-	s, err := c.Get("session")
-	session, ok := s.(models.Session)
+	s, _ := c.Get("session")
+	session, _ := s.(models.Session)
 
 	email := c.PostForm("email")
 	pass := c.PostForm("password")
@@ -127,7 +128,7 @@ func DoNewAccountHandler(c *gin.Context) {
 
 	session.Authorize(user.Id)
 
-	utils.SetSessionCookie(c, session.Res.Crypter.Encid(session.Id))
+	utils.SetSessionCookie(c, session.Res.Encid(session.Id))
 
 	c.Redirect(http.StatusSeeOther, "/profile")
 }

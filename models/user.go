@@ -23,6 +23,10 @@ func (u *User) Load(id int) (err error) {
 	return nil
 }
 
+func (u *User) LoadByEmail(email string) (err error) {
+	return nil
+}
+
 func (u *User) Store() error {
 	return nil
 }

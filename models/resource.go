@@ -47,13 +47,13 @@ func (r *Resource) StoreRow(table string, fields []string, params ...interface{}
 
 	if pkey == nil {
 		qs := strings.TrimRight(strings.Repeat("?,", len(params)), ",")
-		res, err = r.db.Exec("INSERT INTO ? VALUES ("+qs+")", table, params...)
+		res, err = r.db.Exec("INSERT INTO ? VALUES ("+qs+")", append([]interface{}{table}, params)...)
 		pkey, err = res.LastInsertId()
 		// TODO make sure pkey refs back into the model it's set from
 	} else {
 		fieldString := strings.Join(fields, "=?, ") + "=?"
 		params = append(params, pkey) // fill out the id param
-		_, err = r.db.Exec("UPDATE ? SET ("+fieldString+") WHERE id=?", table, params...)
+		_, err = r.db.Exec("UPDATE ? SET ("+fieldString+") WHERE id=?", append([]interface{}{table}, params)...)
 	}
 
 	// TODO what errors do we need to handle here

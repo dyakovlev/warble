@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 	"os"
 
@@ -9,7 +8,6 @@ import (
 
 	"github.com/dyakovlev/warble/handlers"
 	"github.com/dyakovlev/warble/models"
-	"github.com/dyakovlev/warble/utils"
 )
 
 // environment variables
@@ -25,7 +23,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
-	r, err := models.NewResource(os.Getenv(PostgresURL), os.Getenv(EncIDKey))
+	r, _ := models.NewResource(os.Getenv(PostgresURL), os.Getenv(EncIDKey))
 
 	router.GET("/", staticPage("index"))
 
@@ -35,22 +33,22 @@ func main() {
 
 	auth := router.Group("/auth", SessionMiddleware(r))
 	{
-		router.GET("/auth", handlers.GetAuthHandler)
-		router.POST("/auth/new", handlers.DoNewAccountHandler)
-		router.POST("/auth/login", handlers.DoAuthHandler)
-		router.POST("/auth/logout", handlers.DoLogoutHandler)
+		auth.GET("/auth", handlers.GetAuthHandler)
+		auth.POST("/auth/new", handlers.DoNewAccountHandler)
+		auth.POST("/auth/login", handlers.DoAuthHandler)
+		auth.POST("/auth/logout", handlers.DoLogoutHandler)
 	}
 
 	app := router.Group("/", SessionMiddleware(r), InGroup(User))
 	{
-		router.GET("/user", handlers.GetUserHandler)
-		router.POST("/user", handlers.SaveUserHandler)
+		app.GET("/user", handlers.GetUserHandler)
+		app.POST("/user", handlers.SaveUserHandler)
 
-		router.GET("/project", handlers.GetProjectHandler)
-		router.POST("/project", handlers.SaveProjectHandler)
+		app.GET("/project", handlers.GetProjectHandler)
+		app.POST("/project", handlers.SaveProjectHandler)
 
-		router.GET("/clip", handlers.GetClipHandler)
-		router.POST("/clip", handlers.SaveClipHandler)
+		app.GET("/clip", handlers.GetClipHandler)
+		app.POST("/clip", handlers.SaveClipHandler)
 	}
 
 	router.Run(":" + os.Getenv(Port))
@@ -58,12 +56,12 @@ func main() {
 }
 
 func XHRMiddleware(ctx *gin.Context) {
-	ctx.Set("is_xhr", r.Header.Get("X-Requested-With") == "XMLHttpRequest")
+	ctx.Set("is_xhr", ctx.Request.Header.Get("X-Requested-With") == "XMLHttpRequest")
 }
 
 func SessionMiddleware(r *models.Resource) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		s, err := models.InitSession(r, ctx)
+		s, _ := models.InitSession(r, ctx)
 
 		// TODO handle err
 
@@ -73,18 +71,17 @@ func SessionMiddleware(r *models.Resource) gin.HandlerFunc {
 
 func staticPage(page string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		ctx.HTML(http.StatusOK, page+".tmpl.html")
+		ctx.HTML(http.StatusOK, page+".tmpl.html", gin.H{})
 	}
 }
 
-func InGroup(minGroup Group) gin.HandlerFunc {
-	return func(ctx *Context) {
-		s := ctx.MustGet("session")
-		session, ok := s.(models.Session)
+func InGroup(minGroup int) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		session, _ := ctx.MustGet("session").(models.Session)
 
 		// only All is allowed to be unauthenticated
-		if !s.Auth && minGroup < All {
-			if ctx.Get("is_xhr") {
+		if !session.Auth && minGroup < All {
+			if ctx.MustGet("is_xhr").(bool) {
 				InternalError(ctx, NOT_LOGGED_IN, http.StatusForbidden)
 			} else {
 				// TODO last page url param to redir to cur page after auth
@@ -94,7 +91,7 @@ func InGroup(minGroup Group) gin.HandlerFunc {
 			return
 		}
 
-		if minGroup < s.Group {
+		if minGroup < session.Group {
 			InternalError(ctx, INSUFFICIENT_PRIVS, http.StatusForbidden)
 			ctx.Abort()
 			return
@@ -104,10 +101,8 @@ func InGroup(minGroup Group) gin.HandlerFunc {
 	}
 }
 
-type Group int
-
 const (
-	Admin Group = iota // privileged
-	User               // regular logged-in user
-	All                // any user, logged-in or logged-out
+	Admin int = iota // privileged
+	User             // regular logged-in user
+	All              // any user, logged-in or logged-out
 )

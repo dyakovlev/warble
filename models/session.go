@@ -40,7 +40,7 @@ func (s *Session) Load(id int) (err error) {
 	err = row.Scan(&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid)
 
 	if err != nil {
-		// handle norows error
+		// TODO handle norows error
 	}
 
 	return err
@@ -49,7 +49,7 @@ func (s *Session) Load(id int) (err error) {
 func (s *Session) Store() error {
 	_, err := s.Res.StoreRow(
 		"session",
-		[]string{"id", "auth", "group", "seen", "uid", "pid"},
+		[]string{"id", "auth", "grp", "seen", "uid", "pid"},
 		&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid,
 	)
 	return err
