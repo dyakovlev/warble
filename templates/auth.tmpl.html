@@ -17,13 +17,17 @@ the email var is unset
 <br>
 
 {{ if .login }}
-this is the login section
+this is the login section which is visible
+{{ else }}
+the login section is not visible
 {{ end }}
 
 <br>
 
 {{ if .register }}
-this is the register section
+this is the register section which is visible
+{{ else }}
+the register section is not visible
 {{ end }}
 
 <!-- /body -->

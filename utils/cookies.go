@@ -33,9 +33,8 @@ func SetCookie(c *gin.Context, name string, value string, expiration time.Time, 
 	http.SetCookie(c.Writer, &cookie)
 }
 
-func GetSessionCookie(c *gin.Context) string {
-	s, _ := c.Cookie(sessionCookie)
-	return s
+func GetSessionCookie(c *gin.Context) (string, error) {
+	return c.Cookie(sessionCookie)
 }
 
 func SetSessionCookie(c *gin.Context, encSid string) {

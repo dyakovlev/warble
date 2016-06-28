@@ -33,10 +33,10 @@ func main() {
 
 	auth := router.Group("/auth", SessionMiddleware(r))
 	{
-		auth.GET("/auth", handlers.GetAuthHandler)
-		auth.POST("/auth/new", handlers.DoNewAccountHandler)
-		auth.POST("/auth/login", handlers.DoAuthHandler)
-		auth.POST("/auth/logout", handlers.DoLogoutHandler)
+		auth.GET("", handlers.GetAuthHandler)
+		auth.POST("/new", handlers.DoNewAccountHandler)
+		auth.POST("/login", handlers.DoAuthHandler)
+		auth.POST("/logout", handlers.DoLogoutHandler)
 	}
 
 	app := router.Group("/", SessionMiddleware(r), InGroup(User))

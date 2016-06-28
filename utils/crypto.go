@@ -3,7 +3,10 @@ package utils
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -20,9 +23,6 @@ func VerifyPass(encPass string, rawCandidate string) bool {
 	return err == nil
 }
 
-// TODO generate this randomly per encryption, cc. https://gist.github.com/manishtpatel/8222606
-var commonIV = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}
-
 type IDCodec struct {
 	cipher cipher.Block
 }
@@ -37,17 +37,29 @@ func NewIDCodec(key string) *IDCodec {
 	return &IDCodec{c}
 }
 
-func (c *IDCodec) Decid(ciphertext string) int {
-	decrypter := cipher.NewCFBDecrypter(c.cipher, commonIV)
-	plaintext := make([]byte, 4096) // TODO length?
-	decrypter.XORKeyStream([]byte(ciphertext), plaintext)
+func (c *IDCodec) Decid(b64 string) int {
+	ciphertext, _ := base64.StdEncoding.DecodeString(b64)
+	iv := ciphertext[:aes.BlockSize]
+	plaintext := ciphertext[aes.BlockSize:]
+
+	decrypter := cipher.NewCFBDecrypter(c.cipher, iv)
+	decrypter.XORKeyStream(plaintext, plaintext)
+
 	dec, _ := strconv.Atoi(string(plaintext))
 	return dec
 }
 
 func (c *IDCodec) Encid(plainId int) string {
-	encrypter := cipher.NewCFBEncrypter(c.cipher, commonIV)
-	ciphertext := make([]byte, 4096) // TODO length?
-	encrypter.XORKeyStream(ciphertext, []byte(strconv.Itoa(plainId)))
-	return string(ciphertext)
+	plaintext := strconv.Itoa(plainId)
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+
+	encrypter := cipher.NewCFBEncrypter(c.cipher, iv)
+	encrypter.XORKeyStream(ciphertext[aes.BlockSize:], []byte(plaintext))
+
+	return base64.StdEncoding.EncodeToString(ciphertext)
 }

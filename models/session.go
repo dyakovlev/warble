@@ -24,15 +24,24 @@ type Session struct {
 
 func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 	s := Session{Res: r}
-	if noSession := s.Load(r.Decid(utils.GetSessionCookie(c))); noSession != nil {
-		s.UpdateSeen()
-		return &s, nil
+
+	if rawSessionId, badCookie := utils.GetSessionCookie(c); badCookie != nil && rawSessionId != "" {
+		if decSessionId := r.Decid(rawSessionId); decSessionId != 0 {
+			if noSessionRow := s.Load(decSessionId); noSessionRow != nil {
+				s.UpdateSeen()
+				return &s, nil
+			}
+		}
 	}
 
 	// TODO handle errors
 
-	newSession := Session{Auth: false, Seen: time.Now()}
-	return &newSession, nil
+	// if we're here we're making a new session
+
+	s.Seen = time.Now()
+	s.Group = 2 // All
+
+	return &s, nil
 }
 
 func (s *Session) Load(id int) (err error) {

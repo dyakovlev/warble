@@ -19,7 +19,7 @@ func GetAuthHandler(c *gin.Context) {
 	if c.DefaultQuery("se", "") != "" {
 		// TODO log
 		utils.ExpireSessionCookie(c)
-		c.HTML(http.StatusOK, "auth", gin.H{
+		c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
 			"login":    false,
 			"register": true,
 			"email":    nil,
@@ -39,7 +39,7 @@ func GetAuthHandler(c *gin.Context) {
 	if session.Auth == true && session.Uid != 0 {
 		user := models.User{Res: session.Res}
 		user.Load(session.Uid)
-		c.HTML(http.StatusOK, "auth", gin.H{
+		c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
 			"login":    true,
 			"register": false,
 			"email":    utils.ObfuscateEmail(user.Email),
@@ -50,7 +50,7 @@ func GetAuthHandler(c *gin.Context) {
 	// sessions without an associated uid don't have an account associated with them,
 	// so maybe they should make an account.
 
-	c.HTML(http.StatusOK, "register", gin.H{
+	c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
 		"login":    true,
 		"register": true,
 		"email":    nil,
