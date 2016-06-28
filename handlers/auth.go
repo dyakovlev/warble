@@ -10,8 +10,7 @@ import (
 )
 
 func GetAuthHandler(c *gin.Context) {
-	s, _ := c.Get("session")
-	session, _ := s.(models.Session)
+	session, _ := c.MustGet("session").(models.Session)
 
 	redir := c.DefaultQuery("redir", "/")
 
@@ -59,8 +58,7 @@ func GetAuthHandler(c *gin.Context) {
 }
 
 func DoLogoutHandler(c *gin.Context) {
-	s, _ := c.Get("session")
-	session, _ := s.(models.Session)
+	session, _ := c.MustGet("session").(models.Session)
 
 	// TODO log
 
@@ -72,8 +70,7 @@ func DoLogoutHandler(c *gin.Context) {
 }
 
 func DoAuthHandler(c *gin.Context) {
-	s, _ := c.Get("session")
-	session, _ := s.(models.Session)
+	session, _ := c.MustGet("session").(models.Session)
 
 	var err error
 	user := models.User{Res: session.Res}
@@ -110,8 +107,7 @@ func DoAuthHandler(c *gin.Context) {
 }
 
 func DoNewAccountHandler(c *gin.Context) {
-	s, _ := c.Get("session")
-	session, _ := s.(models.Session)
+	session, _ := c.MustGet("session").(models.Session)
 
 	email := c.PostForm("email")
 	pass := c.PostForm("password")

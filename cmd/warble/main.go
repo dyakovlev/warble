@@ -50,7 +50,6 @@ func main() {
 		app.GET("/clip", handlers.GetClipHandler)
 		app.POST("/clip", handlers.SaveClipHandler)
 	}
-
 	router.Run(":" + os.Getenv(Port))
 	// TODO RunTLS for logged-in stuff
 }
@@ -71,7 +70,7 @@ func SessionMiddleware(r *models.Resource) gin.HandlerFunc {
 
 func staticPage(page string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		ctx.HTML(http.StatusOK, page+".tmpl.html", gin.H{})
+		ctx.HTML(http.StatusOK, page+".tmpl.html", nil)
 	}
 }
 
