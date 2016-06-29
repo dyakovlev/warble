@@ -30,11 +30,15 @@ func (u *User) LoadByEmail(email string) (err error) {
 }
 
 func (u *User) Store() (err error) {
-	err = u.Res.StoreRow(
-		"users",
-		[]string{"email", "pass"},
-		&u.Id,
-		u.Email, u.Pass)
+	if u.Id == 0 {
+		err = u.Res.DB.QueryRow("INSERT INTO users (email, pass) VALUES ($1::varchar(255), $2::varchar(255)) RETURNING id",
+			u.Email, u.Pass).Scan(&u.Id)
+	} else {
+		_, err = u.Res.DB.Exec("UPDATE users SET (email=$1,pass=$2) WHERE id=$3",
+			u.Email, u.Pass, u.Id)
+	}
+
+	handleDBError(err)
 
 	return
 }

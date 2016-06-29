@@ -56,11 +56,15 @@ func (s *Session) Load(id int64) (err error) {
 }
 
 func (s *Session) Store() (err error) {
-	err = s.Res.StoreRow(
-		"session",
-		[]string{"auth", "grp", "seen", "uid", "pid"},
-		&s.Id,
-		s.Auth, s.Group, s.Seen, s.Uid, s.Pid)
+	if s.Id == 0 {
+		err = s.Res.DB.QueryRow("INSERT INTO session (auth, grp, seen, uid, pid) VALUES ($1::boolean, $2::integer, $3::timestamp without time zone, $4::integer, $5::integer) RETURNING id",
+			s.Auth, s.Group, s.Seen, s.Uid, s.Pid).Scan(&s.Id)
+	} else {
+		_, err = s.Res.DB.Exec("UPDATE session SET (auth=$1,grp=$2,seen=$3,uid=$4,pid=$5) WHERE id=$6",
+			s.Auth, s.Group, s.Seen, s.Uid, s.Pid, s.Id)
+	}
+
+	handleDBError(err)
 
 	return
 }
@@ -76,14 +80,17 @@ func (s *Session) Expire() (err error) {
 	return err
 }
 
-func (s *Session) Authorize(uid int64) error {
+func (s *Session) Authorize(u *User) error {
 	s.Auth = true
-	s.Uid = uid
+	s.Uid = u.Id
+	s.Group = u.Group
+
 	err := s.Store()
 
 	if err != nil {
 		s.Auth = false
 		s.Uid = 0
+		s.Group = 2
 	}
 
 	return err

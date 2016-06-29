@@ -90,7 +90,7 @@ func DoAuthHandler(c *gin.Context) {
 		c.Redirect(http.StatusSeeOther, c.DefaultQuery("redir", "/"))
 	} else {
 		// TODO log password auth failure
-		c.Redirect(http.StatusOK, "/auth")
+		c.Redirect(http.StatusSeeOther, "/auth")
 	}
 }
 
@@ -108,11 +108,14 @@ func DoNewAccountHandler(c *gin.Context) {
 		Res:   session.Res,
 	}
 
-	user.Store()
+	if err := user.Store(); err != nil {
+		utils.Error("handlers.auth.DoNewAccountHandler:", err)
+		// TODO set error flash
+		c.Redirect(http.StatusSeeOther, "/auth")
+		return
+	}
 
 	session.Authorize(user.Id)
-
 	utils.SetSessionCookie(c, session.Res.Encid(session.Id))
-
 	c.Redirect(http.StatusSeeOther, "/profile")
 }
