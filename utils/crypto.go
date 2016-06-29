@@ -5,9 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"io"
-	"os"
 	"strconv"
 
 	"github.com/elithrar/simple-scrypt"
@@ -30,14 +28,13 @@ type IDCodec struct {
 func NewIDCodec(key string) *IDCodec {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		fmt.Printf("Error: NewCipher(%d bytes) = %s", len(key), err)
-		os.Exit(-1)
+		panic("[crypto] error calling NewCipher")
 	}
 
 	return &IDCodec{c}
 }
 
-func (c *IDCodec) Decid(b64 string) int {
+func (c *IDCodec) Decid(b64 string) int64 {
 	ciphertext, _ := base64.StdEncoding.DecodeString(b64)
 	iv := ciphertext[:aes.BlockSize]
 	plaintext := ciphertext[aes.BlockSize:]
@@ -45,12 +42,12 @@ func (c *IDCodec) Decid(b64 string) int {
 	decrypter := cipher.NewCFBDecrypter(c.cipher, iv)
 	decrypter.XORKeyStream(plaintext, plaintext)
 
-	dec, _ := strconv.Atoi(string(plaintext))
+	dec, _ := strconv.ParseInt(string(plaintext), 10, 64)
 	return dec
 }
 
-func (c *IDCodec) Encid(plainId int) string {
-	plaintext := strconv.Itoa(plainId)
+func (c *IDCodec) Encid(plainId int64) string {
+	plaintext := strconv.FormatInt(plainId, 10)
 	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
 	iv := ciphertext[:aes.BlockSize]
 

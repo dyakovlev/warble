@@ -23,7 +23,11 @@ func main() {
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
-	r, _ := models.NewResource(os.Getenv(PostgresURL), os.Getenv(EncIDKey))
+	r, err := models.NewResource(os.Getenv(PostgresURL), os.Getenv(EncIDKey))
+
+	if err != nil {
+		panic(err)
+	}
 
 	router.GET("/", staticPage("index"))
 
@@ -41,8 +45,8 @@ func main() {
 
 	app := router.Group("/", SessionMiddleware(r), InGroup(User))
 	{
-		app.GET("/user", handlers.GetUserHandler)
-		app.POST("/user", handlers.SaveUserHandler)
+		app.GET("/profile", handlers.GetProfileHandler)
+		app.POST("/profile", handlers.SaveProfileHandler)
 
 		app.GET("/project", handlers.GetProjectHandler)
 		app.POST("/project", handlers.SaveProjectHandler)

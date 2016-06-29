@@ -25,7 +25,11 @@ the login section is not visible
 <br>
 
 {{ if .register }}
-this is the register section which is visible
+<form action="/auth/new" method="POST">
+	<input name="email" type="email"/><br />
+	<input name="password" type="password" />
+	<input name="register" type="submit" />
+</form>
 {{ else }}
 the register section is not visible
 {{ end }}

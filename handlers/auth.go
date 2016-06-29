@@ -10,7 +10,7 @@ import (
 )
 
 func GetAuthHandler(c *gin.Context) {
-	session, _ := c.MustGet("session").(models.Session)
+	session, _ := c.MustGet("session").(*models.Session)
 
 	redir := c.DefaultQuery("redir", "/")
 
@@ -58,7 +58,7 @@ func GetAuthHandler(c *gin.Context) {
 }
 
 func DoLogoutHandler(c *gin.Context) {
-	session, _ := c.MustGet("session").(models.Session)
+	session, _ := c.MustGet("session").(*models.Session)
 
 	// TODO log
 
@@ -70,27 +70,15 @@ func DoLogoutHandler(c *gin.Context) {
 }
 
 func DoAuthHandler(c *gin.Context) {
-	session, _ := c.MustGet("session").(models.Session)
+	session, _ := c.MustGet("session").(*models.Session)
 
 	var err error
 	user := models.User{Res: session.Res}
 
-	if session.Uid != 0 {
-		err = user.Load(session.Uid)
-	} else {
-		err = user.LoadByEmail(c.PostForm("email"))
-	}
-
-	if err != nil {
+	if err = user.LoadByEmail(c.PostForm("email")); err != nil {
 		// TODO log
 		// TODO add no-user message to flash
 		c.Redirect(http.StatusSeeOther, "/auth")
-	}
-
-	if user.Email != c.PostForm("email") {
-		// TODO log
-		// TODO add message
-		session.Detach()
 	}
 
 	if utils.VerifyPass(user.Pass, c.PostForm("password")) {
@@ -107,7 +95,7 @@ func DoAuthHandler(c *gin.Context) {
 }
 
 func DoNewAccountHandler(c *gin.Context) {
-	session, _ := c.MustGet("session").(models.Session)
+	session, _ := c.MustGet("session").(*models.Session)
 
 	email := c.PostForm("email")
 	pass := c.PostForm("password")

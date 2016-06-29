@@ -1,7 +1,9 @@
 package models
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	"strings"
 
@@ -16,52 +18,73 @@ type Resource struct {
 
 func NewResource(dbAddress string, crypterKey string) (*Resource, error) {
 	db, err := sql.Open("postgres", dbAddress)
-	crypter := utils.NewIDCodec(crypterKey)
+	crypter := utils.NewIDCodec(crypterKey) // TODO globally initialize crypter, doesn't need to be a part of Resource
 
 	return &Resource{db, crypter}, err
 }
 
-func (r *Resource) Encid(plain int) string {
+func (r *Resource) Encid(plain int64) string {
 	return r.crypter.Encid(plain)
 }
 
-func (r *Resource) Decid(enc string) int {
+func (r *Resource) Decid(enc string) int64 {
 	return r.crypter.Decid(enc)
 }
 
-func (r *Resource) LoadRow(table string, id int) *sql.Row {
+func (r *Resource) LoadRowById(table string, id int64) *sql.Row {
 	// TODO sanitize `table` param
 
-	return r.db.QueryRow("SELECT * FROM ? WHERE id=?", table, id)
+	return r.db.QueryRow("SELECT * FROM $1 WHERE id=$2", table, id)
 }
 
-func (r *Resource) StoreRow(table string, fields []string, params ...interface{}) (int, error) {
+func (r *Resource) LoadRow(table string, col string, val string) *sql.Row {
 	// TODO sanitize params
 
-	var err error
-	var res sql.Result
-	pkey := params[0]
+	return r.db.QueryRow("SELECT * FROM $1 WHERE $2=$3", table, col, val)
+}
 
-	// if supplied model doesn't have a defined primary key value, we make a new row and return
-	// the id (which the model should then store)
+func (r *Resource) StoreRow(table string, fields []string, pkey *int64, params ...interface{}) (err error) {
+	// TODO sanitize params
 
-	if pkey == nil {
-		qs := strings.TrimRight(strings.Repeat("?,", len(params)), ",")
-		res, err = r.db.Exec("INSERT INTO ? VALUES ("+qs+")", append([]interface{}{table}, params)...)
-		pkey, err = res.LastInsertId()
-		// TODO make sure pkey refs back into the model it's set from
+	if *pkey == 0 {
+		err = r.db.QueryRow("INSERT INTO $1 VALUES ("+buildNumString(len(params))+") RETURNING id", buildParams(table, params)...).Scan(pkey)
 	} else {
-		fieldString := strings.Join(fields, "=?, ") + "=?"
-		params = append(params, pkey) // fill out the id param
-		_, err = r.db.Exec("UPDATE ? SET ("+fieldString+") WHERE id=?", append([]interface{}{table}, params)...)
+		_, err = r.db.Exec("UPDATE $1 SET ("+buildFieldString(fields)+") WHERE id=?", buildParams(table, params, pkey)...)
 	}
-
-	// TODO what errors do we need to handle here
 
 	switch {
 	case err != nil:
-		// log a fatal error
+		utils.Error("[resource] StoreRow error:", err)
 	}
 
-	return pkey.(int), err
+	return
+}
+
+// returns "$2,$3,$4" if q=3
+func buildNumString(q int) string {
+	var out bytes.Buffer
+
+	for i := 2; i < q+2; i++ {
+		out.WriteString(fmt.Sprintf("$%d,", i))
+	}
+
+	outs := out.String()
+	return strings.TrimRight(outs, ",")
+}
+
+// returns "field0=$2,field1=$3,.." for every field in fields
+func buildFieldString(fields []string) string {
+	var out bytes.Buffer
+
+	for i := 2; i < len(fields)+2; i++ {
+		out.WriteString(fmt.Sprintf("%s=$%d,", fields[i-2], i))
+	}
+
+	outs := out.String()
+	return strings.TrimRight(outs, ",")
+}
+
+// combines passed params into a flat list
+func buildParams(t string, p []interface{}, extra ...interface{}) []interface{} {
+	return append(append([]interface{}{t}, p...), extra...)
 }

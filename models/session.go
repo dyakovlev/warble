@@ -1,22 +1,22 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/dyakovlev/warble/utils"
+	"github.com/gin-gonic/gin"
 )
 
 // a Session model represents a logged-in session
 type Session struct {
 	// in schema
-	Id    int       // session id (primary key)
+	Id    int64     // session id (primary key)
 	Auth  bool      // has the user logged in
 	Group int       // what group does the logged-in user belong to
 	Seen  time.Time // last seen
-	Uid   int       // associated user (if authenticated)
-	Pid   int       // associated project (last one worked on, for convenience)
+	Uid   int64     // associated user (if authenticated)
+	Pid   int64     // associated project (last one worked on, for convenience)
 
 	// not in schema
 	Res *Resource // ref to initialized resources
@@ -36,7 +36,7 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 
 	// TODO handle errors
 
-	// if we're here we're making a new session
+	// if we're here we're making a new session (but not saving it until it gets authenticated)
 
 	s.Seen = time.Now()
 	s.Group = 2 // All
@@ -44,8 +44,8 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 	return &s, nil
 }
 
-func (s *Session) Load(id int) (err error) {
-	row := s.Res.LoadRow("session", id)
+func (s *Session) Load(id int64) (err error) {
+	row := s.Res.LoadRowById("session", id)
 	err = row.Scan(&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid)
 
 	if err != nil {
@@ -55,13 +55,14 @@ func (s *Session) Load(id int) (err error) {
 	return err
 }
 
-func (s *Session) Store() error {
-	_, err := s.Res.StoreRow(
+func (s *Session) Store() (err error) {
+	err = s.Res.StoreRow(
 		"session",
-		[]string{"id", "auth", "grp", "seen", "uid", "pid"},
-		&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid,
-	)
-	return err
+		[]string{"auth", "grp", "seen", "uid", "pid"},
+		&s.Id,
+		s.Auth, s.Group, s.Seen, s.Uid, s.Pid)
+
+	return
 }
 
 func (s *Session) Expire() (err error) {
@@ -75,14 +76,14 @@ func (s *Session) Expire() (err error) {
 	return err
 }
 
-func (s *Session) Authorize(uid int) error {
+func (s *Session) Authorize(uid int64) error {
 	s.Auth = true
 	s.Uid = uid
 	err := s.Store()
 
 	if err != nil {
 		s.Auth = false
-		s.Uid = -1
+		s.Uid = 0
 	}
 
 	return err
@@ -90,11 +91,16 @@ func (s *Session) Authorize(uid int) error {
 
 func (s *Session) Detach() error {
 	s.Auth = false
-	s.Uid = -1
+	s.Uid = 0
 	return s.Store()
 }
 
 func (s *Session) UpdateSeen() error {
 	s.Seen = time.Now()
 	return s.Store()
+}
+
+func (s *Session) String() string {
+	return fmt.Sprintf("session id:%v\nuid:%v\npid:%v\nauth:%v\nseen:%v\nResource:%v",
+		s.Id, s.Uid, s.Pid, s.Auth, s.Seen, s.Res)
 }
