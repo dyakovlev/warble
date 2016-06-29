@@ -8,6 +8,7 @@ import (
 
 	"github.com/dyakovlev/warble/handlers"
 	"github.com/dyakovlev/warble/models"
+	"github.com/dyakovlev/warble/utils"
 )
 
 // environment variables
@@ -78,24 +79,31 @@ func staticPage(page string) gin.HandlerFunc {
 	}
 }
 
+// rethink this, it sucks
 func InGroup(minGroup int) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		session, _ := ctx.MustGet("session").(models.Session)
+		session, _ := ctx.MustGet("session").(*models.Session)
+
+		utils.Info("InGroup session:", session)
 
 		// only All is allowed to be unauthenticated
 		if !session.Auth && minGroup < All {
 			if ctx.MustGet("is_xhr").(bool) {
-				InternalError(ctx, NOT_LOGGED_IN, http.StatusForbidden)
+				ctx.HTML(http.StatusForbidden, "error.tmpl.html", nil)
 			} else {
 				// TODO last page url param to redir to cur page after auth
 				ctx.Redirect(http.StatusSeeOther, "/auth")
 			}
+
+			utils.Error("InGroup aborting response due to not being authenticated")
 			ctx.Abort()
 			return
 		}
 
 		if minGroup < session.Group {
-			InternalError(ctx, INSUFFICIENT_PRIVS, http.StatusForbidden)
+			ctx.HTML(http.StatusForbidden, "error.tmpl.html", nil)
+
+			utils.Error("InGroup aborting response due to not being priveleged enough")
 			ctx.Abort()
 			return
 		}

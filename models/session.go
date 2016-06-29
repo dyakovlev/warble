@@ -25,28 +25,35 @@ type Session struct {
 func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 	s := Session{Res: r}
 
-	if rawSessionId, badCookie := utils.GetSessionCookie(c); badCookie != nil && rawSessionId != "" {
-		if decSessionId := r.Decid(rawSessionId); decSessionId != 0 {
-			if noSessionRow := s.Load(decSessionId); noSessionRow != nil {
-				s.UpdateSeen()
-				return &s, nil
-			}
-		}
+	if rawSessionId, badCookie := utils.GetSessionCookie(c); badCookie != nil || rawSessionId == "" {
+		utils.Error("InitSession: bad or no cookie:", rawSessionId, badCookie)
+	} else if decSessionId := r.Decid(rawSessionId); decSessionId == 0 {
+		utils.Error("InitSession: Decid couldn't decode session cookie", rawSessionId)
+	} else if noSessionRow := s.Load(decSessionId); noSessionRow != nil {
+		utils.Error("InitSession: couldn't load session", decSessionId, noSessionRow)
+	} else {
+		utils.Info("InitSession: successfully loaded session", decSessionId, "from cookie", rawSessionId)
+		s.UpdateSeen()
+		return &s, nil
 	}
 
-	// TODO handle errors
+	// expire any existing session cookie if we've gone this far and it died..
+
+	utils.ExpireSessionCookie(c)
 
 	// if we're here we're making a new session (but not saving it until it gets authenticated)
 
 	s.Seen = time.Now()
 	s.Group = 2 // All
 
+	utils.Info("InitSession: made a new session")
+
 	return &s, nil
 }
 
 func (s *Session) Load(id int64) (err error) {
 	row := s.Res.LoadRowById("session", id)
-	err = row.Scan(&s.Id, &s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid)
+	err = row.Scan(&s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid, &s.Id)
 
 	if err != nil {
 		// TODO handle norows error
@@ -57,14 +64,14 @@ func (s *Session) Load(id int64) (err error) {
 
 func (s *Session) Store() (err error) {
 	if s.Id == 0 {
-		err = s.Res.DB.QueryRow("INSERT INTO session (auth, grp, seen, uid, pid) VALUES ($1::boolean, $2::integer, $3::timestamp without time zone, $4::integer, $5::integer) RETURNING id",
+		err = s.Res.DB.QueryRow("INSERT INTO session (auth, grp, seen, uid, pid) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 			s.Auth, s.Group, s.Seen, s.Uid, s.Pid).Scan(&s.Id)
 	} else {
-		_, err = s.Res.DB.Exec("UPDATE session SET (auth=$1,grp=$2,seen=$3,uid=$4,pid=$5) WHERE id=$6",
+		_, err = s.Res.DB.Exec("UPDATE session SET auth=$1, grp=$2, seen=$3, uid=$4, pid=$5 WHERE id = $6",
 			s.Auth, s.Group, s.Seen, s.Uid, s.Pid, s.Id)
 	}
 
-	handleDBError(err)
+	handleDBError("Session.Store", err)
 
 	return
 }
@@ -83,7 +90,12 @@ func (s *Session) Expire() (err error) {
 func (s *Session) Authorize(u *User) error {
 	s.Auth = true
 	s.Uid = u.Id
-	s.Group = u.Group
+
+	if u.Admin {
+		s.Group = 0
+	} else {
+		s.Group = 1
+	}
 
 	err := s.Store()
 
@@ -108,6 +120,6 @@ func (s *Session) UpdateSeen() error {
 }
 
 func (s *Session) String() string {
-	return fmt.Sprintf("session id:%v\nuid:%v\npid:%v\nauth:%v\nseen:%v\nResource:%v",
-		s.Id, s.Uid, s.Pid, s.Auth, s.Seen, s.Res)
+	return fmt.Sprintf("Session{id:%v, uid:%v, pid:%v, auth:%v, group:%v, seen:%v, Resource:%v}",
+		s.Id, s.Uid, s.Pid, s.Auth, s.Group, s.Seen, s.Res)
 }

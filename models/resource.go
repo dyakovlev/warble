@@ -29,20 +29,18 @@ func (r *Resource) Decid(enc string) int64 {
 }
 
 func (r *Resource) LoadRowById(table string, id int64) *sql.Row {
-	// TODO sanitize `table` param
-
-	return r.DB.QueryRow("SELECT * FROM $1 WHERE id=$2", table, id)
+	// sanitize table
+	return r.DB.QueryRow("SELECT * FROM "+table+" WHERE id=$1", id)
 }
 
 func (r *Resource) LoadRow(table string, col string, val string) *sql.Row {
-	// TODO sanitize params
-
-	return r.DB.QueryRow("SELECT * FROM $1 WHERE $2=$3", table, col, val)
+	// sanitize table
+	return r.DB.QueryRow("SELECT * FROM "+table+" WHERE $1=$2", col, val)
 }
 
-func handleDBError(err error) {
+func handleDBError(prefix string, err error) {
 	switch {
 	case err != nil:
-		utils.Error("DB error:", err)
+		utils.Error(prefix, "DB error:", err)
 	}
 }

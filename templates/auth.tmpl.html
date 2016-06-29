@@ -1,39 +1,26 @@
 {{ template "header" }}
 
-<!-- body -->
-<style scoped>
-</style>
-
-this is the auth template! yay!
-
-<br>
-
-{{ if .email }}
-the email var is set to {{ .email }}
-{{ else }}
-the email var is unset
-{{ end }}
+this is the auth template
 
 <br>
 
 {{ if .login }}
-this is the login section which is visible
-{{ else }}
-the login section is not visible
+I think you are {{ .email }}. <br>
+<form action="/auth/login" method="POST">
+	<input name="password" type="password" />
+	<input name="login" type="submit" value="login"/>
+</form>
 {{ end }}
 
 <br>
 
 {{ if .register }}
+Register: <br>
 <form action="/auth/new" method="POST">
-	<input name="email" type="email"/><br />
+	<input name="email" type="email" />
 	<input name="password" type="password" />
-	<input name="register" type="submit" />
+	<input name="register" type="submit" value="register"/>
 </form>
-{{ else }}
-the register section is not visible
 {{ end }}
-
-<!-- /body -->
 
 {{ template "footer" }}

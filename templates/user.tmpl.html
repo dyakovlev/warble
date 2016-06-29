@@ -1,5 +1,9 @@
 {{ template "header" }}
 
-if you see this you're a logged-in user! yay!
+if you see this you're a logged-in user whose email is {{ .email }}
+
+<form action="/auth/logout" method="POST">
+	<button name="logout" value="submit">log out</button>
+</form>
 
 {{ template "footer" }}

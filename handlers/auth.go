@@ -29,22 +29,23 @@ func GetAuthHandler(c *gin.Context) {
 
 	// why would the user be logged in? handle this case anyway..
 
-	if session.Auth != false {
+	if session.Auth == true {
 		c.Redirect(http.StatusSeeOther, redir)
 		return
 	}
 
 	// inactive sessions (user logged out or session expired) get a log-back-in screen
 
-	if session.Auth == true && session.Uid != 0 {
-		user := models.User{Res: session.Res}
-		user.Load(session.Uid)
-		c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
-			"login":    true,
-			"register": false,
-			"email":    utils.ObfuscateEmail(user.Email),
-		})
-		return
+	if session.Auth == false && session.Uid != 0 {
+		if user, err := models.InitUser(session); err == nil {
+			c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
+				"login":    true,
+				"register": false,
+				"email":    utils.ObfuscateEmail(user.Email),
+			})
+			return
+		}
+		// fall through to login/register if failed to load user..
 	}
 
 	// sessions without an associated uid don't have an account associated with them,
@@ -76,20 +77,19 @@ func DoAuthHandler(c *gin.Context) {
 	user := models.User{Res: session.Res}
 
 	if err = user.LoadByEmail(c.PostForm("email")); err != nil {
-		// TODO log
+		utils.Error("DoAuthHandler: failed to load user by email")
 		// TODO add no-user message to flash
 		c.Redirect(http.StatusSeeOther, "/auth")
+		return
 	}
 
 	if utils.VerifyPass(user.Pass, c.PostForm("password")) {
-		err = session.Authorize(user.Id)
+		err = session.Authorize(&user)
 		utils.SetSessionCookie(c, session.Res.Encid(session.Id))
 		// TODO add logged-in message to flash
-		// TODO log
-		// TODO maybe makes sense to redirect to last-associated-project in session?
 		c.Redirect(http.StatusSeeOther, c.DefaultQuery("redir", "/"))
 	} else {
-		// TODO log password auth failure
+		utils.Error("DoAuthHandler: bad password")
 		c.Redirect(http.StatusSeeOther, "/auth")
 	}
 }
@@ -105,17 +105,18 @@ func DoNewAccountHandler(c *gin.Context) {
 	user := models.User{
 		Email: email,
 		Pass:  utils.EncryptPass(pass),
+		Admin: false,
 		Res:   session.Res,
 	}
 
 	if err := user.Store(); err != nil {
-		utils.Error("handlers.auth.DoNewAccountHandler:", err)
+		utils.Error("DoNewAccountHandler error storing user: ", err)
 		// TODO set error flash
 		c.Redirect(http.StatusSeeOther, "/auth")
 		return
 	}
 
-	session.Authorize(user.Id)
+	session.Authorize(&user)
 	utils.SetSessionCookie(c, session.Res.Encid(session.Id))
 	c.Redirect(http.StatusSeeOther, "/profile")
 }
