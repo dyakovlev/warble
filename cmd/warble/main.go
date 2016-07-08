@@ -34,7 +34,8 @@ func main() {
 
 	router.GET("/about", staticPage("about"))
 
-	router.GET("/status", SessionMiddleware(r), InGroup(Admin), handlers.StatusHandler)
+	// TODO basic auth
+	router.GET("/status", handlers.StatusHandler)
 
 	auth := router.Group("/auth", SessionMiddleware(r))
 	{
@@ -44,7 +45,7 @@ func main() {
 		auth.POST("/logout", handlers.DoLogoutHandler)
 	}
 
-	app := router.Group("/", SessionMiddleware(r), InGroup(User))
+	app := router.Group("/", SessionMiddleware(r), LoggedIn)
 	{
 		app.GET("/profile", handlers.GetProfileHandler)
 		app.POST("/profile", handlers.SaveProfileHandler)
@@ -79,41 +80,17 @@ func staticPage(page string) gin.HandlerFunc {
 	}
 }
 
-// rethink this, it sucks
-func InGroup(minGroup int) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		session, _ := ctx.MustGet("session").(*models.Session)
-
-		utils.Info("InGroup session:", session)
-
-		// only All is allowed to be unauthenticated
-		if !session.Auth && minGroup < All {
-			if ctx.MustGet("is_xhr").(bool) {
-				ctx.HTML(http.StatusForbidden, "error.tmpl.html", nil)
-			} else {
-				// TODO last page url param to redir to cur page after auth
-				ctx.Redirect(http.StatusSeeOther, "/auth")
-			}
-
-			utils.Error("InGroup aborting response due to not being authenticated")
-			ctx.Abort()
-			return
+func LoggedIn(ctx *gin.Context) {
+	session, _ := ctx.MustGet("session").(*models.Session)
+	if !session.Auth {
+		if ctx.MustGet("is_xhr").(bool) {
+			ctx.JSON(http.StatusOK, gin.H{"error": "unauthorized"})
+		} else {
+			// TODO last page url param to redir to cur page after auth
+			ctx.Redirect(http.StatusSeeOther, "/auth")
 		}
 
-		if minGroup < session.Group {
-			ctx.HTML(http.StatusForbidden, "error.tmpl.html", nil)
-
-			utils.Error("InGroup aborting response due to not being priveleged enough")
-			ctx.Abort()
-			return
-		}
-
-		ctx.Next()
+		utils.Error("[LoggedIn] aborting response due to not being authenticated")
+		ctx.Abort()
 	}
 }
-
-const (
-	Admin int = iota // privileged
-	User             // regular logged-in user
-	All              // any user, logged-in or logged-out
-)
