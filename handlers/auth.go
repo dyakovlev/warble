@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,31 +13,28 @@ import (
 func GetAuthHandler(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
-	redir := c.DefaultQuery("redir", "/")
+	// logged in already
 
-	// se url param expires the session (clears session cookie)
+	if session.Auth == true {
+		c.Redirect(http.StatusSeeOther, c.DefaultQuery("redir", "/"))
+		return
+	}
+
+	// "se" query param, i.e. ignore session
 
 	if c.DefaultQuery("se", "") != "" {
-		// TODO log
 		utils.ExpireSessionCookie(c)
 		c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
-			"login":    false,
-			"register": true,
+			"login":    true,
+			"register": false,
 			"email":    nil,
 		})
 		return
 	}
 
-	// why would the user be logged in? handle this case anyway..
+	// existing session
 
-	if session.Auth == true {
-		c.Redirect(http.StatusSeeOther, redir)
-		return
-	}
-
-	// inactive sessions (user logged out or session expired) get a log-back-in screen
-
-	if session.Auth == false && session.Uid != 0 {
+	if session.Uid != 0 {
 		if user, err := models.InitUser(session); err == nil {
 			c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
 				"login":    true,
@@ -45,11 +43,9 @@ func GetAuthHandler(c *gin.Context) {
 			})
 			return
 		}
-		// fall through to login/register if failed to load user..
 	}
 
-	// sessions without an associated uid don't have an account associated with them,
-	// so maybe they should make an account.
+	// no session
 
 	c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
 		"login":    true,
@@ -60,47 +56,63 @@ func GetAuthHandler(c *gin.Context) {
 
 func DoLogoutHandler(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
-
-	// TODO log
-
-	// TODO flash message
-
 	session.Expire()
-
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
 func DoAuthHandler(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
-	var err error
+	if email, emailErr := utils.ParseEmail(c.PostForm("email")); emailErr != nil {
+		return retryAuth(c, fmt.Sprintf("failed to parse email %v", email), "bad email supplied")
+	}
+
+	if pass, passErr := utils.ParsePassword(c.PostForm("password")); passErr != nil {
+		return retryAuth(c, fmt.Sprintf("failed to parse password %v", email), "bad password supplied")
+	}
+
 	user := models.User{Res: session.Res}
 
-	if err = user.LoadByEmail(c.PostForm("email")); err != nil {
-		utils.Error("DoAuthHandler: failed to load user by email")
-		// TODO add no-user message to flash
-		c.Redirect(http.StatusSeeOther, "/auth")
-		return
+	switch {
+	case email == "" && session.Uid != 0:
+		if err := user.Load(session.Uid); err != nil {
+			return retryAuth(c, fmt.Sprintf("failed to load user %v", session.Uid), "bad session user")
+		}
+	case email != "" && session.Uid == 0:
+		if err := user.LoadByEmail(email); err != nil {
+			return retryAuth(c, fmt.Sprintf("failed to load user by email %v", email), "bad email")
+		}
+	default:
+		return retryAuth(c, "supplied both or neither session/email", "bad data")
 	}
 
-	if utils.VerifyPass(user.Pass, c.PostForm("password")) {
-		err = session.Authorize(&user)
-		utils.SetSessionCookie(c, session.Res.Encid(session.Id))
-		// TODO add logged-in message to flash
-		c.Redirect(http.StatusSeeOther, c.DefaultQuery("redir", "/"))
-	} else {
-		utils.Error("DoAuthHandler: bad password")
-		c.Redirect(http.StatusSeeOther, "/auth")
+	if !utils.VerifyPass(user.Pass, pass) {
+		return retryAuth(c, "bad password", "bad password")
 	}
+
+	if err := session.Authorize(&user); err != nil {
+		utils.SetSessionCookie(c, session.Res.Encid(session.Id))
+	}
+
+	c.Redirect(http.StatusSeeOther, c.DefaultQuery("redir", "/"))
+}
+
+func retryAuth(c *gin.Context, errLog string, errFlash string) {
+	utils.Error("[DoAuthHandler]", errLog)
+	// TODO set flash to errFlash
+	c.Redirect(http.StatusSeeOther, "/auth")
 }
 
 func DoNewAccountHandler(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
-	email := c.PostForm("email")
-	pass := c.PostForm("password")
+	if email, emailErr := utils.ParseEmail(c.PostForm("email")); emailErr != nil {
+		return retryNewAccount(c, fmt.Sprintf("failed to parse email %v", email), "bad email supplied")
+	}
 
-	// TODO validate email, pass
+	if pass, passErr := utils.ParsePassword(c.PostForm("password")); passErr != nil {
+		return retryNewAccount(c, fmt.Sprintf("failed to parse password %v", email), "bad password supplied")
+	}
 
 	user := models.User{
 		Email: email,
@@ -110,13 +122,18 @@ func DoNewAccountHandler(c *gin.Context) {
 	}
 
 	if err := user.Store(); err != nil {
-		utils.Error("DoNewAccountHandler error storing user: ", err)
-		// TODO set error flash
-		c.Redirect(http.StatusSeeOther, "/auth")
-		return
+		return retryNewAccount(c, fmt.Sprintf("didn't store user: %v", err), "didn't store user")
 	}
 
-	session.Authorize(&user)
-	utils.SetSessionCookie(c, session.Res.Encid(session.Id))
+	if err := session.Authorize(&user); err != nil {
+		utils.SetSessionCookie(c, session.Res.Encid(session.Id))
+	}
+
 	c.Redirect(http.StatusSeeOther, "/profile")
+}
+
+func retryNewAccount(c *gin.Context, errLog string, errFlash string) {
+	utils.Error("[DoNewAccountHandler]", errLog)
+	// TODO set flash to errFlash
+	c.Redirect(http.StatusSeeOther, "/auth")
 }
