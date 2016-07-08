@@ -41,6 +41,6 @@ func (r *Resource) LoadRow(table string, col string, val string) *sql.Row {
 func handleDBError(prefix string, err error) {
 	switch {
 	case err != nil:
-		utils.Error(prefix, "DB error:", err)
+		utils.Error(fmt.Sprintf("[%v] DB error: %v", prefix, err))
 	}
 }
