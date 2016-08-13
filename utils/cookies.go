@@ -7,10 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const sessionCookie = "s"
+func GetCookie(c *gin.Context, name string) (string, error) {
+	cookie, err := c.Cookie(name)
 
-func ExpireCookie(c *gin.Context, name string) {
-	SetCookie(c, name, "", time.Now())
+	if err != nil {
+		Error("GetCookie: failed to retrieve cookie", name, ":", err)
+		return "", err
+	}
+
+	return cookie, nil
 }
 
 func SetCookie(c *gin.Context, name string, value string, expiration time.Time) {
@@ -18,15 +23,11 @@ func SetCookie(c *gin.Context, name string, value string, expiration time.Time) 
 	http.SetCookie(c.Writer, &cookie)
 }
 
-func GetCookie(c *gin.Context, name string) (string, error) {
-	cookie, err := c.Cookie(name)
-
-	if err != nil {
-		Error("GetCookie: failed to retrieve cookie", name, ":", err)
-	}
-
-	return cookie, err
+func ExpireCookie(c *gin.Context, name string) {
+	SetCookie(c, name, "", time.Now())
 }
+
+const sessionCookie = "s"
 
 func GetSessionCookie(c *gin.Context) (string, error) {
 	return GetCookie(c, sessionCookie)

@@ -48,7 +48,7 @@ func ServeAuthPage(c *gin.Context) {
 	// no session
 
 	c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
-		"login":    true,
+		"login":    false,
 		"register": true,
 		"email":    nil,
 	})
@@ -139,8 +139,10 @@ func DoNewAccount(c *gin.Context) {
 	}
 
 	if err := session.Authorize(&user); err != nil {
-		utils.SetSessionCookie(c, session.Res.Encid(session.Id))
+		utils.Error("failed to authorize user into session", err)
 	}
+
+	utils.SetSessionCookie(c, session.Res.Encid(session.Id))
 
 	c.Redirect(http.StatusSeeOther, "/profile")
 }

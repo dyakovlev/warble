@@ -41,12 +41,10 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 
 	utils.ExpireSessionCookie(c)
 
-	// if we're here we're making a new session (but not saving it until it gets authenticated)
-
 	s.Seen = time.Now()
 	s.Group = 2 // All
 
-	utils.Info("InitSession: made a new session")
+	utils.Info("InitSession: made a new session", s)
 
 	return &s, nil
 }
@@ -81,7 +79,7 @@ func (s *Session) Expire() (err error) {
 	err = s.Store()
 
 	if err != nil {
-		// TODO log session expiration error
+		// TODO handle session expiration error
 	}
 
 	return err

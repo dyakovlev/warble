@@ -16,6 +16,13 @@ type Resource struct {
 
 func NewResource(dbAddress string, crypterKey string) (*Resource, error) {
 	db, err := sql.Open("postgres", dbAddress)
+	if err != nil {
+		utils.Error("failed to create DB connection", err)
+	}
+
+	// Open doesn't actually touch the DB, need to Ping to see if we can talk to it
+	err = db.Ping()
+
 	crypter := utils.NewIDCodec(crypterKey) // TODO globally initialize crypter, doesn't need to be a part of Resource
 
 	return &Resource{db, crypter}, err
