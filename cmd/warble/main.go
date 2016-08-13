@@ -37,15 +37,15 @@ func main() {
 	// TODO basic auth
 	router.GET("/status", handlers.StatusHandler)
 
-	auth := router.Group("/auth", SessionMiddleware(r))
+	auth := router.Group("/auth", sessionMiddleware(r))
 	{
-		auth.GET("", handlers.GetAuthHandler)
-		auth.POST("/new", handlers.DoNewAccountHandler)
-		auth.POST("/login", handlers.DoAuthHandler)
-		auth.POST("/logout", handlers.DoLogoutHandler)
+		auth.GET("", handlers.ServeAuthPage)
+		auth.POST("/new", handlers.DoNewAccount)
+		auth.POST("/login", handlers.DoAuth)
+		auth.POST("/logout", handlers.DoLogout)
 	}
 
-	app := router.Group("/", SessionMiddleware(r), LoggedIn)
+	app := router.Group("/", sessionMiddleware(r), loggedIn)
 	{
 		app.GET("/profile", handlers.GetProfileHandler)
 		app.POST("/profile", handlers.SaveProfileHandler)
@@ -64,11 +64,14 @@ func XHRMiddleware(ctx *gin.Context) {
 	ctx.Set("is_xhr", ctx.Request.Header.Get("X-Requested-With") == "XMLHttpRequest")
 }
 
-func SessionMiddleware(r *models.Resource) gin.HandlerFunc {
+func sessionMiddleware(r *models.Resource) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		s, _ := models.InitSession(r, ctx)
+		s, err := models.InitSession(r, ctx)
 
-		// TODO handle err
+		if err != nil {
+			utils.Error("[sessionMiddleware] couldn't initialize session")
+			ctx.Abort()
+		}
 
 		ctx.Set("session", s)
 	}
@@ -80,17 +83,17 @@ func staticPage(page string) gin.HandlerFunc {
 	}
 }
 
-func LoggedIn(ctx *gin.Context) {
+func loggedIn(ctx *gin.Context) {
 	session, _ := ctx.MustGet("session").(*models.Session)
+
 	if !session.Auth {
 		if ctx.MustGet("is_xhr").(bool) {
 			ctx.JSON(http.StatusOK, gin.H{"error": "unauthorized"})
 		} else {
-			// TODO last page url param to redir to cur page after auth
 			ctx.Redirect(http.StatusSeeOther, "/auth")
 		}
 
-		utils.Error("[LoggedIn] aborting response due to not being authenticated")
+		utils.Error("[loggedIn] aborting response due to not being authenticated")
 		ctx.Abort()
 	}
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/dyakovlev/warble/utils"
 )
 
-func GetAuthHandler(c *gin.Context) {
+func ServeAuthPage(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
 	// logged in already
@@ -54,21 +54,25 @@ func GetAuthHandler(c *gin.Context) {
 	})
 }
 
-func DoLogoutHandler(c *gin.Context) {
+func DoLogout(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 	session.Expire()
 	c.Redirect(http.StatusSeeOther, "/")
 }
 
-func DoAuthHandler(c *gin.Context) {
+func DoAuth(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
-	if email, emailErr := utils.ParseEmail(c.PostForm("email")); emailErr != nil {
-		return retryAuth(c, fmt.Sprintf("failed to parse email %v", email), "bad email supplied")
+	email, emailErr := utils.ParseEmail(c.PostForm("email"))
+	if emailErr != nil {
+		retryAuth(c, fmt.Sprintf("failed to parse email %v", email), "bad email supplied")
+		return
 	}
 
-	if pass, passErr := utils.ParsePassword(c.PostForm("password")); passErr != nil {
-		return retryAuth(c, fmt.Sprintf("failed to parse password %v", email), "bad password supplied")
+	pass, passErr := utils.ParsePassword(c.PostForm("password"))
+	if passErr != nil {
+		retryAuth(c, fmt.Sprintf("failed to parse password %v", pass), "bad password supplied")
+		return
 	}
 
 	user := models.User{Res: session.Res}
@@ -76,18 +80,22 @@ func DoAuthHandler(c *gin.Context) {
 	switch {
 	case email == "" && session.Uid != 0:
 		if err := user.Load(session.Uid); err != nil {
-			return retryAuth(c, fmt.Sprintf("failed to load user %v", session.Uid), "bad session user")
+			retryAuth(c, fmt.Sprintf("failed to load user %v", session.Uid), "bad session user")
+			return
 		}
 	case email != "" && session.Uid == 0:
 		if err := user.LoadByEmail(email); err != nil {
-			return retryAuth(c, fmt.Sprintf("failed to load user by email %v", email), "bad email")
+			retryAuth(c, fmt.Sprintf("failed to load user by email %v", email), "bad email")
+			return
 		}
 	default:
-		return retryAuth(c, "supplied both or neither session/email", "bad data")
+		retryAuth(c, "supplied both or neither session/email", "bad data")
+		return
 	}
 
 	if !utils.VerifyPass(user.Pass, pass) {
-		return retryAuth(c, "bad password", "bad password")
+		retryAuth(c, "bad password", "bad password")
+		return
 	}
 
 	if err := session.Authorize(&user); err != nil {
@@ -103,15 +111,19 @@ func retryAuth(c *gin.Context, errLog string, errFlash string) {
 	c.Redirect(http.StatusSeeOther, "/auth")
 }
 
-func DoNewAccountHandler(c *gin.Context) {
+func DoNewAccount(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
-	if email, emailErr := utils.ParseEmail(c.PostForm("email")); emailErr != nil {
-		return retryNewAccount(c, fmt.Sprintf("failed to parse email %v", email), "bad email supplied")
+	email, emailErr := utils.ParseEmail(c.PostForm("email"))
+	if emailErr != nil {
+		retryNewAccount(c, fmt.Sprintf("failed to parse email %v", email), "bad email supplied")
+		return
 	}
 
-	if pass, passErr := utils.ParsePassword(c.PostForm("password")); passErr != nil {
-		return retryNewAccount(c, fmt.Sprintf("failed to parse password %v", email), "bad password supplied")
+	pass, passErr := utils.ParsePassword(c.PostForm("password"))
+	if passErr != nil {
+		retryNewAccount(c, fmt.Sprintf("failed to parse password %v", pass), "bad password supplied")
+		return
 	}
 
 	user := models.User{
@@ -122,7 +134,8 @@ func DoNewAccountHandler(c *gin.Context) {
 	}
 
 	if err := user.Store(); err != nil {
-		return retryNewAccount(c, fmt.Sprintf("didn't store user: %v", err), "didn't store user")
+		retryNewAccount(c, fmt.Sprintf("didn't store user: %v", err), "didn't store user")
+		return
 	}
 
 	if err := session.Authorize(&user); err != nil {

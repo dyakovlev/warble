@@ -12,7 +12,9 @@ func ObfuscateEmail(email string) string {
 	return fmt.Sprintf("%v***%v@%v", string(addr[0]), string(addr[len(addr)-1]), chunks[1])
 }
 
+// remove typical db-unsafe characters, return whether or not any were bad
 func SanitizeText(text *string) bool {
+	return true
 }
 
 func ParseEmail(email string) (string, error) {

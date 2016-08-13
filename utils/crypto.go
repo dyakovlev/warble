@@ -8,6 +8,7 @@ import (
 	"io"
 	"strconv"
 
+	// despite being called simple-scrypt this provides an "scrypt" package
 	"github.com/elithrar/simple-scrypt"
 )
 
@@ -28,7 +29,7 @@ type IDCodec struct {
 func NewIDCodec(key string) *IDCodec {
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		panic("[crypto] error calling NewCipher")
+		panic("[NewIDCodec] error calling NewCipher")
 	}
 
 	return &IDCodec{c}
