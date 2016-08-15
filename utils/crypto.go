@@ -26,13 +26,9 @@ type IDCodec struct {
 	cipher cipher.Block
 }
 
-func NewIDCodec(key string) *IDCodec {
+func NewIDCodec(key string) (*IDCodec, error) {
 	c, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		panic("[NewIDCodec] error calling NewCipher")
-	}
-
-	return &IDCodec{c}
+	return &IDCodec{c}, err
 }
 
 func (c *IDCodec) Decid(b64 string) int64 {

@@ -17,15 +17,24 @@ type Resource struct {
 func NewResource(dbAddress string, crypterKey string) (*Resource, error) {
 	db, err := sql.Open("postgres", dbAddress)
 	if err != nil {
-		utils.Error("failed to create DB connection", err)
+		utils.Error("[NewResource] failed to create DB connection", err)
+		return nil, err
 	}
 
-	// Open doesn't actually touch the DB, need to Ping to see if we can talk to it
+	// Open doesn't actually touch the DB, need to ping to see if we can talk to it
 	err = db.Ping()
+	if err != nil {
+		utils.Error("[NewResource] failed to ping DB", err)
+		return nil, err
+	}
 
-	crypter := utils.NewIDCodec(crypterKey) // TODO globally initialize crypter, doesn't need to be a part of Resource
+	crypter, err := utils.NewIDCodec(crypterKey)
+	if err != nil {
+		utils.Error("[NewResource] error calling NewIDCodec", err)
+		return nil, err
+	}
 
-	return &Resource{db, crypter}, err
+	return &Resource{db, crypter}, nil
 }
 
 func (r *Resource) Encid(plain int64) string {
@@ -37,12 +46,12 @@ func (r *Resource) Decid(enc string) int64 {
 }
 
 func (r *Resource) LoadRowById(table string, id int64) *sql.Row {
-	// sanitize table
+	// TODO sanitize table
 	return r.DB.QueryRow("SELECT * FROM "+table+" WHERE id=$1", id)
 }
 
 func (r *Resource) LoadRow(table string, col string, val string) *sql.Row {
-	// sanitize table
+	// TODO sanitize table
 	return r.DB.QueryRow("SELECT * FROM "+table+" WHERE $1=$2", col, val)
 }
 
