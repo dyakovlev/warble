@@ -1,0 +1,27 @@
+{
+  "name": "warble",
+  "version": "1.0.0",
+  "description": "",
+  "main": "rollup.config.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dyakovlev/warble.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dyakovlev/warble/issues"
+  },
+  "homepage": "https://github.com/dyakovlev/warble#readme",
+  "devDependencies": {
+    "babel-preset-es2015-rollup": "^1.2.0",
+    "rollup-plugin-babel": "^2.6.1"
+  }
+}
