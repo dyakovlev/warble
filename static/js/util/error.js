@@ -1,7 +1,7 @@
 /* Error logging module
  *
  * TODO
- * - move log level somewhere more sensible
+ * - set LOG_LEVEL in a centralized config somewhere?
  */
 
 const LOG_LEVEL = 1;

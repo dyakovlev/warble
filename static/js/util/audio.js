@@ -1,4 +1,4 @@
-import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "./error";
 
 /* Recorder encapsulates a ScriptProcessorNode to grab and store raw audio samples whenever a
  * microphone input buffer is attached to it.

@@ -1,6 +1,6 @@
 // ClipStore holds all the clips in sorted order to enable efficient search and ordered playback
 
-import {INFO, WARN, ERROR, DEBUG, TRACE} from "./utils/error";
+import {INFO, WARN, ERROR, DEBUG, TRACE} from "../util/error";
 
 export class ClipStore {
 	constructor(){

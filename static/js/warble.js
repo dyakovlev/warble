@@ -1,7 +1,6 @@
-import {EventHub} from "components/EventHub";
-import {Project} from "components/Project";
-import {Workspace} from "components/Workspace";
-
+import { EventHub } from "./components/EventHub";
+import { Project } from "./components/Project";
+import { Workspace } from "./components/Workspace";
 
 let w = class Warble {
 	constructor(config){

@@ -30,9 +30,8 @@
  * }
  */
 
-import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
-import { ClipStore } from "./components/ClipStore";
-
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "../util/error";
+import { ClipStore } from "./ClipStore";
 
 export class Project {
 	constructor(hub){
@@ -80,7 +79,7 @@ export class Project {
 			// TODO investigate using localStorage to cache these instead of storing remotely
 			// TODO maybe it makes sense to bundle these somehow in the download?
 			$.get(this.project.urls.loadClip.format(clip.id))
-				.done(data => { this.buffers.set(clip.id) = data; })
+				.done(data => { this.buffers.set(clip.id, data); })
 				.fail(err => { ERROR(`failed to load buffer for clip ${clip.id}`); });
 		}
 

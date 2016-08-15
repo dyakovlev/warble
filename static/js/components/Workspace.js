@@ -1,8 +1,8 @@
 // Workspace deals with generating the app's views
 
-import { INFO, WARN, ERROR, DEBUG, TRACE } from "./utils/error";
-import { draggable } from "./utils/misc";
-import { Recorder } from "./utils/audio";
+import { INFO, WARN, ERROR, DEBUG, TRACE } from "../util/error";
+import { draggable } from "../util/misc";
+import { Recorder } from "../util/audio";
 
 export class Workspace {
 	constructor(hub){
