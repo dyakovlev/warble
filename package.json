@@ -1,27 +1,35 @@
 {
   "name": "warble",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "rollup.config.js",
-  "directories": {
-    "doc": "doc"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "keywords": [],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dyakovlev/warble.git"
   },
-  "keywords": [],
-  "author": "",
+  "scripts": {},
+  "author": "dyakovlev",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/dyakovlev/warble/issues"
   },
-  "homepage": "https://github.com/dyakovlev/warble#readme",
+  "homepage": "https://github.com/dyakovlev/warble",
+  "dependencies": {
+    "react": "^15.3.2",
+    "react-dom": "^15.3.2",
+    "react-redux": "next",
+    "redux": "^3.6.0",
+    "rollup-plugin-replace": "^1.1.1"
+  },
   "devDependencies": {
-    "babel-preset-es2015-rollup": "^1.2.0",
-    "rollup-plugin-babel": "^2.6.1"
+    "babel-preset-react": "^6.11.1",
+    "babel-preset-es2015": "^6.16.0",
+    "babel-plugin-external-helpers": "^6.8.0",
+    "rollup-plugin-babel": "^2.6.1",
+    "rollup-plugin-commonjs": "^5.0.4",
+    "rollup-plugin-node-globals": "^1.0.9",
+    "rollup-plugin-node-resolve": "^2.0.0",
+    "rollup-plugin-uglify": "^1.0.1"
   }
 }

@@ -1,11 +1,17 @@
+
+server_deps := $(wildcard *.go)
+client_deps := $(wildcard client/js/*.js)
+
+.PHONY: all clean client server
+
 all: server client
 
-server:
+server: $(server_deps)
 	go install ./...
 
-client:
+client: $(client_deps)
 	rollup -c
 
 clean:
-	go clean
 	rm -rf build/*
+
