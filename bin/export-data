@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# usage: export-data dbname data/dbdump_4135145
+
+pg_dump -a $1 > $2

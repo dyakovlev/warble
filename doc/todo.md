@@ -7,8 +7,9 @@
 + write models for Project, User and Clip
 + convert handlers to use parametrized template names
 + write handlers for Project and Profile
++ rewrite DB import/export/backup/restore scripts
+- create database, fill it out
 - implement and convert to DB abstraction shim
-- rewrite DB import/export/backup/restore scripts
 - flesh out error template, cut down on ignored errors
 - modify auth to supply a username
 

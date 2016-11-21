@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# usage: export-schema dbname schema/dbschema_4135145
+
+pg_dump -Cs $1 > $2

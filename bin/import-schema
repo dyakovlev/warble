@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# usage: import-schema dbname schema/dbschema_4135145
+
+createdb -T template0 $1
+psql $1 < $2
