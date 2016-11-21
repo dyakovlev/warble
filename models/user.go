@@ -1,5 +1,9 @@
 package models
 
+import (
+	"fmt"
+)
+
 // a User model represents a person that can be logged in to the site
 type User struct {
 	// in schema
@@ -13,8 +17,8 @@ type User struct {
 }
 
 func InitUser(r *Resource, uid int64) (*User, error) {
-	u = User{Res: r}
-	err = u.Load(uid)
+	u := User{Res: r}
+	err := u.Load(uid)
 	return &u, err
 }
 

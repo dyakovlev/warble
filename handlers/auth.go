@@ -131,7 +131,6 @@ func DoNewAccount(c *gin.Context) {
 	user := models.User{
 		Email: email,
 		Pass:  utils.EncryptPass(pass),
-		Admin: false,
 		Res:   session.Res,
 	}
 

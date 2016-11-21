@@ -11,10 +11,10 @@ import (
 const OwnProfileTemplate = "content-profile.tmpl.html"
 const OtherProfileTemplate = "content-profile-external.tmpl.html"
 
-func GetProfileHandler(c *gin.Context) {
+func ServeProfilePage(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
-	user = models.User{Res: r}
+	user := models.User{Res: session.Res}
 	err := user.LoadByName(c.Param("name"))
 
 	if err != nil {

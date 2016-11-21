@@ -1,12 +1,32 @@
-import { EventHub } from "./components/EventHub";
-import { Project } from "./components/Project";
-import { Workspace } from "./components/Workspace";
+import React from 'react'
+import render from 'react-dom'
+import { Provider } from 'react-redux'
+import { createStore } from 'redux'
 
-let w = class Warble {
-	constructor(config){
-		let hub = new EventHub();
-		this.workspace = new Workspace(hub);
-		this.project = new Project(hub);
-		this.project.load();
-	}
-}();
+import { TopBar, NotificationArea, Project } from './components/index'
+import reducer from './reducers/index'
+
+let store = createStore(reducer, {
+    user: 'dyakovlev',
+    projects: [
+        { name: 'test project 1', link: 'test-project-1' },
+        { name: 'test project 1', link: 'test-project-2' }
+    ],
+    activeProject: 0,
+    notification: {level: null, msg: null},
+    project: {
+        description: 'long form text description of project'
+    }
+})
+
+render(
+    <Provider store={createStore(reducer)}>
+        <div>
+            <TopBar />
+            <NotificationArea />
+            <Project />
+        </div>
+    </Provider>
+    , document.querySelector('.root')
+)
+

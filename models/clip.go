@@ -2,9 +2,6 @@ package models
 
 import (
 	"fmt"
-	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // TODO how closely should this be integrated with the S3 clip storage?
@@ -18,9 +15,9 @@ type Clip struct {
 	Res *Resource // ref to initialized resources
 }
 
-func InitClip(r *Resource, c *gin.Context) (*Clip, error) {
+func InitClip(r *Resource) (*Clip, error) {
 	c := Clip{Res: r}
-	return c, nil
+	return &c, nil
 }
 
 func (c *Clip) Load(id int64) (err error) {
@@ -39,6 +36,7 @@ func (c *Clip) Store() (err error) {
 	}
 
 	handleDBError("Project.Store", err)
+	return
 }
 
 func (c *Clip) String() string {

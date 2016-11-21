@@ -4,8 +4,8 @@ import resolve from 'rollup-plugin-node-resolve'
 import replace from 'rollup-plugin-replace'
 
 export default {
-  dest: 'out.js',
-  entry: 'app.js',
+  dest: 'build/app.js',
+  entry: 'client/js/warble.js',
   format: 'iife',
   plugins: [
     babel({
@@ -26,6 +26,7 @@ export default {
         'node_modules/invariant/**',
       ],
       namedExports: {
+          'node_modules/react/react.js': ['PropTypes', 'createElement', 'Children', 'Component']
       }
     }),
     replace({ 'process.env.NODE_ENV': JSON.stringify('development') }),

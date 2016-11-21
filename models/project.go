@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // a Project model represents a project configuration (where a project is a song)
@@ -16,10 +14,10 @@ type Project struct {
 	Name     string    // username/unique-to-user-project-name
 	JSON     string    // json blob project description
 	Modified time.Time // last modified timestamp
-	Public   boolean   // is the project publically visible
+	Public   bool      // is the project publically visible
 
 	// not in schema
-	resource *Resource // ref to initialized resources
+	Res *Resource // ref to initialized resources
 }
 
 func InitProject(r *Resource, viewer int64, owner string, name string) (*Project, error) {
@@ -58,6 +56,7 @@ func (p *Project) Store() (err error) {
 	}
 
 	handleDBError("Project.Store", err)
+	return
 }
 
 func (p *Project) String() string {

@@ -21,7 +21,9 @@ func ServeProjectPage(c *gin.Context) {
 		c.HTML(http.StatusOK, ErrorTemplate, gin.H{})
 	}
 
-	c.HTML(http.StatusOK, ProjectTemplate, gin.H{})
+	c.HTML(http.StatusOK, ProjectTemplate, gin.H{
+		"project": p,
+	})
 }
 
 func SaveProjectHandler(c *gin.Context) {
