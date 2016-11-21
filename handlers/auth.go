@@ -10,6 +10,8 @@ import (
 	"github.com/dyakovlev/warble/utils"
 )
 
+const AuthTemplate = "content-auth.tmpl.html"
+
 func ServeAuthPage(c *gin.Context) {
 	session, _ := c.MustGet("session").(*models.Session)
 
@@ -24,7 +26,7 @@ func ServeAuthPage(c *gin.Context) {
 
 	if c.DefaultQuery("se", "") != "" {
 		utils.ExpireSessionCookie(c)
-		c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
+		c.HTML(http.StatusOK, AuthTemplate, gin.H{
 			"login":    true,
 			"register": false,
 			"email":    nil,
@@ -35,8 +37,8 @@ func ServeAuthPage(c *gin.Context) {
 	// existing session
 
 	if session.Uid != 0 {
-		if user, err := models.InitUser(session); err == nil {
-			c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
+		if user, err := models.InitUser(session.Res, session.Uid); err == nil {
+			c.HTML(http.StatusOK, AuthTemplate, gin.H{
 				"login":    true,
 				"register": false,
 				"email":    utils.ObfuscateEmail(user.Email),
@@ -47,7 +49,7 @@ func ServeAuthPage(c *gin.Context) {
 
 	// no session
 
-	c.HTML(http.StatusOK, "auth.tmpl.html", gin.H{
+	c.HTML(http.StatusOK, AuthTemplate, gin.H{
 		"login":    false,
 		"register": true,
 		"email":    nil,

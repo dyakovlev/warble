@@ -4,42 +4,53 @@ package models
 type User struct {
 	// in schema
 	Id    int64
-	Email string // used as login name
+	Name  string // unique name
+	Email string // used for contact
 	Pass  string // salted, hashed password
-	Admin bool   // is user an admin
 
 	// not in schema
 	Res *Resource // ref to initialized resources
 }
 
-func InitUser(s *Session) (u *User, err error) {
-	u = &User{Res: s.Res}
-	err = u.Load(s.Uid)
-	return
+func InitUser(r *Resource, uid int64) (*User, error) {
+	u = User{Res: r}
+	err = u.Load(uid)
+	return &u, err
 }
 
 func (u *User) Load(id int64) (err error) {
 	row := u.Res.LoadRowById("users", id)
-	err = row.Scan(&u.Email, &u.Pass, &u.Id, &u.Admin)
+	err = row.Scan(&u.Name, &u.Email, &u.Pass, &u.Id)
+	return
+}
+
+func (u *User) LoadByName(name string) (err error) {
+	row := u.Res.LoadRow("users", "name", name)
+	err = row.Scan(&u.Name, &u.Email, &u.Pass, &u.Id)
 	return
 }
 
 func (u *User) LoadByEmail(email string) (err error) {
 	row := u.Res.LoadRow("users", "email", email)
-	err = row.Scan(&u.Email, &u.Pass, &u.Id, &u.Admin)
+	err = row.Scan(&u.Name, &u.Email, &u.Pass, &u.Id)
 	return
 }
 
 func (u *User) Store() (err error) {
 	if u.Id == 0 {
-		err = u.Res.DB.QueryRow("INSERT INTO users (email, pass, admin) VALUES ($1::varchar(255), $2::varchar(255), $3::boolean) RETURNING id",
-			u.Email, u.Pass, u.Admin).Scan(&u.Id)
+		err = u.Res.DB.QueryRow("INSERT INTO users (name, email, pass) VALUES ($1, $2, $3) RETURNING id",
+			u.Name, u.Email, u.Pass).Scan(&u.Id)
 	} else {
-		_, err = u.Res.DB.Exec("UPDATE users SET email=$1, pass=$2, admin=$3 WHERE id=$3",
-			u.Email, u.Pass, u.Admin, u.Id)
+		_, err = u.Res.DB.Exec("UPDATE users SET name=$1, email=$2, pass=$3 WHERE id=$4",
+			u.Name, u.Email, u.Pass, u.Id)
 	}
 
 	handleDBError("User.Store", err)
 
 	return
+}
+
+func (u *User) String() string {
+	return fmt.Sprintf("User{id:%v, name:%v, email:%v, hashed pass:%v Resource:%v}",
+		u.Id, u.Name, u.Email, u.Pass, u.Res)
 }

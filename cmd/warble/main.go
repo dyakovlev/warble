@@ -20,7 +20,7 @@ const (
 
 func main() {
 	router := gin.Default()
-	router.Static("/static", "static")
+	router.Static("/static", "build")
 	router.LoadHTMLGlob("templates/*.tmpl.html")
 	router.Use(XHRMiddleware)
 
@@ -34,9 +34,9 @@ func main() {
 
 	router.GET("/about", staticPage("about"))
 
-	// TODO basic auth
 	router.GET("/status", handlers.StatusHandler)
 
+	// auth stuff (does not force logged-in session)
 	auth := router.Group("/auth", sessionMiddleware(r))
 	{
 		auth.GET("", handlers.ServeAuthPage)
@@ -45,17 +45,22 @@ func main() {
 		auth.POST("/logout", handlers.DoLogout)
 	}
 
+	// main app page endpoints
 	app := router.Group("/", sessionMiddleware(r), loggedIn)
 	{
-		app.GET("/profile", handlers.GetProfileHandler)
-		app.POST("/profile", handlers.SaveProfileHandler)
-
-		app.GET("/project", handlers.GetProjectHandler)
-		app.POST("/project", handlers.SaveProjectHandler)
-
-		app.GET("/clip", handlers.GetClipHandler)
-		app.POST("/clip", handlers.SaveClipHandler)
+		app.GET("/:name", handlers.ServeProfilePage)          // warble.net/dyakovlev
+		app.GET("/:name/:project", handlers.ServeProjectPage) // warble.net/dyakovlev/this-song-is-amazing
 	}
+
+	// non-pageload server interaction endpoints
+	api := router.Group("/api", sessionMiddleware(r), loggedIn)
+	{
+		api.POST("/profile/:name", handlers.SaveProfileHandler)          // warble.net/api/profile/dyakovlev
+		api.POST("/project/:name/:project", handlers.SaveProjectHandler) // warble.net/api/project/dyakovlev/this-song-is-amazing
+		api.GET("/clip/:clipid", handlers.GetClipHandler)                // warble.net/api/clip/doq2387hdacuao8a
+		api.POST("/clip/:clipid", handlers.SaveClipHandler)              // warble.net/api/clip/doq2387hdacuao8a
+	}
+
 	router.Run(":" + os.Getenv(Port))
 	// TODO RunTLS for logged-in stuff
 }

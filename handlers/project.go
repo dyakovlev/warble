@@ -2,22 +2,36 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
+
+	"github.com/dyakovlev/warble/models"
 )
 
-// get project page
-func GetProjectHandler(c *gin.Context) {
+const ProjectTemplate = "content-project.tmpl.html"
+
+func ServeProjectPage(c *gin.Context) {
+	session, _ := c.MustGet("session").(*models.Session)
+
+	username := c.Param("name")
+	projectname := c.Param("project")
+
+	p, err := models.InitProject(session.Res, session.Uid, username, projectname)
+
+	if err != nil {
+		c.HTML(http.StatusOK, ErrorTemplate, gin.H{})
+	}
+
+	c.HTML(http.StatusOK, ProjectTemplate, gin.H{})
 }
 
-// save project info
 func SaveProjectHandler(c *gin.Context) {
 
 }
 
-// retrieve clip info
 func GetClipHandler(c *gin.Context) {
+
 }
 
-// save clip info
 func SaveClipHandler(c *gin.Context) {
 
 }

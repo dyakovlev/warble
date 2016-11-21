@@ -11,12 +11,11 @@ import (
 // a Session model represents a logged-in session
 type Session struct {
 	// in schema
-	Id    int64     // session id (primary key)
-	Auth  bool      // has the user logged in
-	Group int       // what group does the logged-in user belong to
-	Seen  time.Time // last seen
-	Uid   int64     // associated user (if authenticated)
-	Pid   int64     // associated project (last one worked on, for convenience)
+	Id   int64     // session id (primary key)
+	Uid  int64     // associated user (if authenticated)
+	Pid  int64     // associated project (last one worked on, for convenience)
+	Auth bool      // has the user logged in
+	Seen time.Time // last seen
 
 	// not in schema
 	Res *Resource // ref to initialized resources
@@ -38,20 +37,19 @@ func InitSession(r *Resource, c *gin.Context) (*Session, error) {
 	}
 
 	// expire any existing session cookie if we've gone this far and it died..
-
 	utils.ExpireSessionCookie(c)
 
+	// make a new session but don't save it (we don't need a row in the DB for every anon visit)
 	s.Seen = time.Now()
-	s.Group = 2 // All
 
-	utils.Info("InitSession: made a new session", s)
+	utils.Info("InitSession: making a new session", s)
 
 	return &s, nil
 }
 
 func (s *Session) Load(id int64) (err error) {
 	row := s.Res.LoadRowById("session", id)
-	err = row.Scan(&s.Auth, &s.Group, &s.Seen, &s.Uid, &s.Pid, &s.Id)
+	err = row.Scan(&s.Id, &s.Uid, &s.Pid, &s.Auth, &s.Seen)
 
 	if err != nil {
 		// TODO handle norows error
@@ -62,11 +60,11 @@ func (s *Session) Load(id int64) (err error) {
 
 func (s *Session) Store() (err error) {
 	if s.Id == 0 {
-		err = s.Res.DB.QueryRow("INSERT INTO session (auth, grp, seen, uid, pid) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-			s.Auth, s.Group, s.Seen, s.Uid, s.Pid).Scan(&s.Id)
+		err = s.Res.DB.QueryRow("INSERT INTO session (uid, pid, auth, seen) VALUES ($1, $2, $3, $4) RETURNING id",
+			s.Uid, s.Pid, s.Auth, s.Seen).Scan(&s.Id)
 	} else {
-		_, err = s.Res.DB.Exec("UPDATE session SET auth=$1, grp=$2, seen=$3, uid=$4, pid=$5 WHERE id = $6",
-			s.Auth, s.Group, s.Seen, s.Uid, s.Pid, s.Id)
+		_, err = s.Res.DB.Exec("UPDATE session SET uid=$1, pid=$2, auth=$3, seen=$4,  WHERE id = $5",
+			s.Uid, s.Pid, s.Auth, s.Seen, s.Id)
 	}
 
 	handleDBError("Session.Store", err)
@@ -89,18 +87,11 @@ func (s *Session) Authorize(u *User) error {
 	s.Auth = true
 	s.Uid = u.Id
 
-	if u.Admin {
-		s.Group = 0
-	} else {
-		s.Group = 1
-	}
-
 	err := s.Store()
 
 	if err != nil {
 		s.Auth = false
 		s.Uid = 0
-		s.Group = 2
 	}
 
 	return err
@@ -118,6 +109,6 @@ func (s *Session) UpdateSeen() error {
 }
 
 func (s *Session) String() string {
-	return fmt.Sprintf("Session{id:%v, uid:%v, pid:%v, auth:%v, group:%v, seen:%v, Resource:%v}",
-		s.Id, s.Uid, s.Pid, s.Auth, s.Group, s.Seen, s.Res)
+	return fmt.Sprintf("Session{id:%v, uid:%v, pid:%v, auth:%v, seen:%v, Resource:%v}",
+		s.Id, s.Uid, s.Pid, s.Auth, s.Seen, s.Res)
 }

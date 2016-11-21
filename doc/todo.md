@@ -1,23 +1,23 @@
 # TODO
 
-## backend
+## server
 
-- roll a basic server package (serves webapp, provides rudimentary backend)
-- deploy to remote host reliably
++ move around route definitions
++ get rid of groups
++ write models for Project, User and Clip
++ convert handlers to use parametrized template names
++ write handlers for Project and Profile
+- implement and convert to DB abstraction shim
+- rewrite DB import/export/backup/restore scripts
+- flesh out error template, cut down on ignored errors
+- modify auth to supply a username
 
-## frontend
+## client
 
-- get es6 to build (JSPM probably still)
-- build out UI JS (dep frontend template system)
-- build prototype of draggable (or adapt oss)
+- rig up basic React/Redux component structure
+- start filling out basic component framework
 
-## research
+## misc
 
-- find a frontend templating system that works client-side (for dynamic UI building)
-- revise event system to broaden gap between events and function call chains
+- visual design - pick a palette.. something cream/lime/parchment/cucumbery
 
-## administrative
-
-- new name (warble is sort of taken maybe..)
-- graphic design (visual treatment of whole application, UX design)
-- hosting
